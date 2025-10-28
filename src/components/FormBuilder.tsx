@@ -14,6 +14,18 @@ const PACING_RATES: Record<PacingType, number> = {
   fast: 180,
 };
 
+// Segment colors - using HSL values for consistency
+const SEGMENT_COLORS = [
+  "hsl(210, 100%, 95%)",  // Light blue
+  "hsl(160, 100%, 95%)",  // Light teal
+  "hsl(280, 100%, 95%)",  // Light purple
+  "hsl(30, 100%, 95%)",   // Light orange
+  "hsl(340, 100%, 95%)",  // Light pink
+  "hsl(120, 100%, 95%)",  // Light green
+  "hsl(50, 100%, 95%)",   // Light yellow
+  "hsl(190, 100%, 95%)",  // Light cyan
+];
+
 interface Row {
   id: string;
   segment: string;
@@ -31,6 +43,23 @@ export const FormBuilder = () => {
   ]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
+
+  // Get color for a segment
+  const getSegmentColor = (segmentName: string): string => {
+    if (!segmentName || segmentName.trim() === "") return "transparent";
+    
+    // Get all unique segments in order of appearance
+    const uniqueSegments: string[] = [];
+    rows.forEach(row => {
+      const seg = row.segment.trim().toLowerCase();
+      if (seg && !uniqueSegments.includes(seg)) {
+        uniqueSegments.push(seg);
+      }
+    });
+    
+    const index = uniqueSegments.indexOf(segmentName.trim().toLowerCase());
+    return index >= 0 ? SEGMENT_COLORS[index % SEGMENT_COLORS.length] : "transparent";
+  };
 
   // Count words in text
   const countWords = (text: string): number => {
@@ -283,10 +312,16 @@ export const FormBuilder = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, index) => (
+                {rows.map((row, index) => {
+                  const segmentColor = getSegmentColor(row.segment);
+                  return (
                   <tr
                     key={row.id}
-                    className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                    className="border-b border-border last:border-0 hover:opacity-90 transition-all border-l-4"
+                    style={{ 
+                      backgroundColor: segmentColor,
+                      borderLeftColor: segmentColor !== "transparent" ? segmentColor.replace("95%", "60%") : "transparent"
+                    }}
                   >
                     <td className="p-3">
                       <Input
@@ -348,17 +383,23 @@ export const FormBuilder = () => {
                       </Button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
 
           {/* Mobile/Tablet View */}
           <div className="lg:hidden space-y-4 p-4">
-            {rows.map((row, index) => (
+            {rows.map((row, index) => {
+              const segmentColor = getSegmentColor(row.segment);
+              return (
               <div
                 key={row.id}
-                className="bg-muted/30 rounded-lg p-4 space-y-4 border border-border"
+                className="rounded-lg p-4 space-y-4 border-l-4"
+                style={{ 
+                  backgroundColor: segmentColor,
+                  borderLeftColor: segmentColor !== "transparent" ? segmentColor.replace("95%", "60%") : "hsl(var(--border))"
+                }}
               >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-foreground">Row {index + 1}</h3>
@@ -445,7 +486,7 @@ export const FormBuilder = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
 
