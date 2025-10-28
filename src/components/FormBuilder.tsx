@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Download, Save } from "lucide-react";
+import { Plus, Trash2, Download, Save, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,14 +11,44 @@ interface Row {
   visual: string;
   audio: string;
   notes: string;
+  duration: string; // in format MM:SS or just seconds
 }
 
 const STORAGE_KEY = "av-script-data";
 
 export const FormBuilder = () => {
   const [rows, setRows] = useState<Row[]>([
-    { id: "1", segment: "", visual: "", audio: "", notes: "" },
+    { id: "1", segment: "", visual: "", audio: "", notes: "", duration: "" },
   ]);
+
+  // Parse duration string (MM:SS or SS) to total seconds
+  const parseTimeToSeconds = (timeStr: string): number => {
+    if (!timeStr || timeStr.trim() === "") return 0;
+    
+    const parts = timeStr.split(":");
+    if (parts.length === 2) {
+      const minutes = parseInt(parts[0]) || 0;
+      const seconds = parseInt(parts[1]) || 0;
+      return minutes * 60 + seconds;
+    } else {
+      return parseInt(timeStr) || 0;
+    }
+  };
+
+  // Format seconds to MM:SS
+  const formatSecondsToTime = (totalSeconds: number): string => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  // Calculate total running time
+  const getTotalRunningTime = (): string => {
+    const totalSeconds = rows.reduce((sum, row) => {
+      return sum + parseTimeToSeconds(row.duration);
+    }, 0);
+    return formatSecondsToTime(totalSeconds);
+  };
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -44,6 +74,7 @@ export const FormBuilder = () => {
       visual: "",
       audio: "",
       notes: "",
+      duration: "",
     };
     setRows([...rows, newRow]);
     toast.success("Row added");
@@ -63,14 +94,16 @@ export const FormBuilder = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ["Segment/Scene", "Visual", "Audio", "Notes"];
+    const headers = ["Segment/Scene", "Visual", "Audio", "Notes", "Duration"];
     const csvContent = [
       headers.join(","),
       ...rows.map((row) =>
-        [row.segment, row.visual, row.audio, row.notes]
+        [row.segment, row.visual, row.audio, row.notes, row.duration]
           .map((cell) => `"${cell.replace(/"/g, '""')}"`)
           .join(",")
       ),
+      "",
+      `"Total Running Time:",,,,"${getTotalRunningTime()}"`,
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -100,20 +133,29 @@ export const FormBuilder = () => {
           </p>
         </header>
 
-        {/* Action Buttons */}
-        <div className="mb-6 flex flex-wrap gap-3">
-          <Button onClick={addRow} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Row
-          </Button>
-          <Button onClick={saveManually} variant="secondary" className="gap-2">
-            <Save className="h-4 w-4" />
-            Save
-          </Button>
-          <Button onClick={exportToCSV} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+        {/* Action Buttons and Total Time */}
+        <div className="mb-6 flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={addRow} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Row
+            </Button>
+            <Button onClick={saveManually} variant="secondary" className="gap-2">
+              <Save className="h-4 w-4" />
+              Save
+            </Button>
+            <Button onClick={exportToCSV} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg border border-primary/20">
+            <Clock className="h-5 w-5 text-primary" />
+            <div className="text-sm">
+              <span className="text-muted-foreground">Total Running Time: </span>
+              <span className="font-bold text-primary text-lg">{getTotalRunningTime()}</span>
+            </div>
+          </div>
         </div>
 
         {/* Table Container */}
@@ -123,17 +165,20 @@ export const FormBuilder = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left p-4 font-semibold text-foreground w-1/5">
+                  <th className="text-left p-4 font-semibold text-foreground w-[15%]">
                     Segment/Scene
                   </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-1/3">
+                  <th className="text-left p-4 font-semibold text-foreground w-[28%]">
                     Visual
                   </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-1/3">
+                  <th className="text-left p-4 font-semibold text-foreground w-[28%]">
                     Audio
                   </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-1/6">
+                  <th className="text-left p-4 font-semibold text-foreground w-[15%]">
                     Notes
+                  </th>
+                  <th className="text-left p-4 font-semibold text-foreground w-[10%]">
+                    Duration
                   </th>
                   <th className="w-16"></th>
                 </tr>
@@ -174,6 +219,14 @@ export const FormBuilder = () => {
                         onChange={(e) => updateCell(row.id, "notes", e.target.value)}
                         placeholder="Additional notes..."
                         className="min-h-[80px] border-0 bg-transparent focus:bg-background resize-none"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <Input
+                        value={row.duration}
+                        onChange={(e) => updateCell(row.id, "duration", e.target.value)}
+                        placeholder="MM:SS"
+                        className="border-0 bg-transparent focus:bg-background font-mono"
                       />
                     </td>
                     <td className="p-3">
@@ -255,6 +308,18 @@ export const FormBuilder = () => {
                     onChange={(e) => updateCell(row.id, "notes", e.target.value)}
                     placeholder="Additional notes..."
                     className="min-h-[80px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                    Duration (MM:SS)
+                  </label>
+                  <Input
+                    value={row.duration}
+                    onChange={(e) => updateCell(row.id, "duration", e.target.value)}
+                    placeholder="00:30"
+                    className="font-mono"
                   />
                 </div>
               </div>
