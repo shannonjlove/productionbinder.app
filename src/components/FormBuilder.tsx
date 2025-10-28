@@ -1,9 +1,18 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Download, Save, Clock } from "lucide-react";
+import { Plus, Trash2, Download, Save, Clock, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+type PacingType = "slow" | "medium" | "fast";
+
+const PACING_RATES: Record<PacingType, number> = {
+  slow: 120,    // words per minute
+  medium: 150,
+  fast: 180,
+};
 
 interface Row {
   id: string;
@@ -20,6 +29,28 @@ export const FormBuilder = () => {
   const [rows, setRows] = useState<Row[]>([
     { id: "1", segment: "", visual: "", audio: "", notes: "", duration: "" },
   ]);
+  const [pacing, setPacing] = useState<PacingType>("medium");
+  const [useAutoDuration, setUseAutoDuration] = useState(true);
+
+  // Count words in text
+  const countWords = (text: string): number => {
+    if (!text || text.trim() === "") return 0;
+    return text.trim().split(/\s+/).length;
+  };
+
+  // Calculate duration from word count and pacing
+  const calculateDurationFromWords = (wordCount: number): string => {
+    if (wordCount === 0) return "00:00";
+    const wordsPerMinute = PACING_RATES[pacing];
+    const minutes = wordCount / wordsPerMinute;
+    const totalSeconds = Math.round(minutes * 60);
+    return formatSecondsToTime(totalSeconds);
+  };
+
+  // Get total word count
+  const getTotalWordCount = (): number => {
+    return rows.reduce((sum, row) => sum + countWords(row.audio), 0);
+  };
 
   // Parse duration string (MM:SS or SS) to total seconds
   const parseTimeToSeconds = (timeStr: string): number => {
@@ -45,7 +76,10 @@ export const FormBuilder = () => {
   // Calculate total running time
   const getTotalRunningTime = (): string => {
     const totalSeconds = rows.reduce((sum, row) => {
-      return sum + parseTimeToSeconds(row.duration);
+      const duration = useAutoDuration 
+        ? calculateDurationFromWords(countWords(row.audio))
+        : row.duration;
+      return sum + parseTimeToSeconds(duration);
     }, 0);
     return formatSecondsToTime(totalSeconds);
   };
@@ -90,20 +124,47 @@ export const FormBuilder = () => {
   };
 
   const updateCell = (id: string, field: keyof Omit<Row, "id">, value: string) => {
-    setRows(rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
+    setRows(rows.map((row) => {
+      if (row.id !== id) return row;
+      const updated = { ...row, [field]: value };
+      
+      // Auto-update duration when audio changes and auto-duration is enabled
+      if (field === "audio" && useAutoDuration) {
+        const wordCount = countWords(value);
+        updated.duration = calculateDurationFromWords(wordCount);
+      }
+      
+      return updated;
+    }));
   };
 
+  // Update all durations when pacing changes
+  useEffect(() => {
+    if (useAutoDuration) {
+      setRows(rows.map(row => ({
+        ...row,
+        duration: calculateDurationFromWords(countWords(row.audio))
+      })));
+    }
+  }, [pacing, useAutoDuration]);
+
   const exportToCSV = () => {
-    const headers = ["Segment/Scene", "Visual", "Audio", "Notes", "Duration"];
+    const headers = ["Segment/Scene", "Visual", "Audio", "Word Count", "Duration"];
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) =>
-        [row.segment, row.visual, row.audio, row.notes, row.duration]
+      ...rows.map((row) => {
+        const wordCount = countWords(row.audio);
+        const duration = useAutoDuration 
+          ? calculateDurationFromWords(wordCount)
+          : row.duration;
+        return [row.segment, row.visual, row.audio, wordCount.toString(), duration]
           .map((cell) => `"${cell.replace(/"/g, '""')}"`)
-          .join(",")
-      ),
+          .join(",");
+      }),
       "",
+      `"Total Words:",,,"${getTotalWordCount()}",""`,
       `"Total Running Time:",,,,"${getTotalRunningTime()}"`,
+      `"Pacing:",,,"${pacing}",""`,
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -133,8 +194,9 @@ export const FormBuilder = () => {
           </p>
         </header>
 
-        {/* Action Buttons and Total Time */}
-        <div className="mb-6 flex flex-wrap items-center gap-3 justify-between">
+        {/* Controls Section */}
+        <div className="mb-6 space-y-4">
+          {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
             <Button onClick={addRow} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -149,11 +211,45 @@ export const FormBuilder = () => {
               Export CSV
             </Button>
           </div>
-          <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg border border-primary/20">
-            <Clock className="h-5 w-5 text-primary" />
-            <div className="text-sm">
-              <span className="text-muted-foreground">Total Running Time: </span>
-              <span className="font-bold text-primary text-lg">{getTotalRunningTime()}</span>
+
+          {/* Pacing and Stats */}
+          <div className="flex flex-wrap items-center gap-4 justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Gauge className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Script Pacing:</span>
+              </div>
+              <Select value={pacing} onValueChange={(v) => setPacing(v as PacingType)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="slow">Slow (120 wpm)</SelectItem>
+                  <SelectItem value="medium">Medium (150 wpm)</SelectItem>
+                  <SelectItem value="fast">Fast (180 wpm)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant={useAutoDuration ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseAutoDuration(!useAutoDuration)}
+              >
+                {useAutoDuration ? "Auto Duration" : "Manual Duration"}
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <div className="bg-muted/50 px-4 py-2 rounded-lg border border-border">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Total Words: </span>
+                  <span className="font-bold text-foreground">{getTotalWordCount()}</span>
+                </div>
+              </div>
+              <div className="bg-primary/10 px-4 py-2 rounded-lg border border-primary/20">
+                <Clock className="h-4 w-4 text-primary inline-block mr-2" />
+                <span className="text-sm text-muted-foreground">Total Time: </span>
+                <span className="font-bold text-primary text-lg">{getTotalRunningTime()}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -165,17 +261,20 @@ export const FormBuilder = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left p-4 font-semibold text-foreground w-[15%]">
+                  <th className="text-left p-4 font-semibold text-foreground w-[12%]">
                     Segment/Scene
                   </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[28%]">
+                  <th className="text-left p-4 font-semibold text-foreground w-[26%]">
                     Visual
                   </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[28%]">
+                  <th className="text-left p-4 font-semibold text-foreground w-[26%]">
                     Audio
                   </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[15%]">
+                  <th className="text-left p-4 font-semibold text-foreground w-[14%]">
                     Notes
+                  </th>
+                  <th className="text-left p-4 font-semibold text-foreground w-[8%]">
+                    Words
                   </th>
                   <th className="text-left p-4 font-semibold text-foreground w-[10%]">
                     Duration
@@ -221,12 +320,21 @@ export const FormBuilder = () => {
                         className="min-h-[80px] border-0 bg-transparent focus:bg-background resize-none"
                       />
                     </td>
+                    <td className="p-3 text-center">
+                      <div className="text-sm font-mono text-muted-foreground">
+                        {countWords(row.audio)}
+                      </div>
+                    </td>
                     <td className="p-3">
                       <Input
-                        value={row.duration}
+                        value={useAutoDuration 
+                          ? calculateDurationFromWords(countWords(row.audio))
+                          : row.duration
+                        }
                         onChange={(e) => updateCell(row.id, "duration", e.target.value)}
                         placeholder="MM:SS"
                         className="border-0 bg-transparent focus:bg-background font-mono"
+                        disabled={useAutoDuration}
                       />
                     </td>
                     <td className="p-3">
@@ -311,16 +419,30 @@ export const FormBuilder = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                    Duration (MM:SS)
-                  </label>
-                  <Input
-                    value={row.duration}
-                    onChange={(e) => updateCell(row.id, "duration", e.target.value)}
-                    placeholder="00:30"
-                    className="font-mono"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                      Word Count
+                    </label>
+                    <div className="bg-muted/50 rounded-md px-3 py-2 text-sm font-mono">
+                      {countWords(row.audio)} words
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                      Duration (MM:SS)
+                    </label>
+                    <Input
+                      value={useAutoDuration 
+                        ? calculateDurationFromWords(countWords(row.audio))
+                        : row.duration
+                      }
+                      onChange={(e) => updateCell(row.id, "duration", e.target.value)}
+                      placeholder="00:30"
+                      className="font-mono"
+                      disabled={useAutoDuration}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
