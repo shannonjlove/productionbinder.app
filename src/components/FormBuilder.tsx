@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Download, Save, Clock, Gauge } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { ProductionView } from "./ProductionView";
+import { ShotList } from "./ShotList";
+import { ScriptEditor } from "./ScriptEditor";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -43,6 +45,8 @@ export const FormBuilder = () => {
   ]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
+  const [currentView, setCurrentView] = useState<"production" | "shot" | "script">("shot");
+  const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
 
   // Get color for a segment
   const getSegmentColor = (segmentName: string): string => {
@@ -149,7 +153,21 @@ export const FormBuilder = () => {
       return;
     }
     setRows(rows.filter((row) => row.id !== id));
+    if (selectedShotId === id) {
+      setSelectedShotId(null);
+      setCurrentView("shot");
+    }
     toast.success("Row deleted");
+  };
+
+  const handleSelectShot = (id: string) => {
+    setSelectedShotId(id);
+    setCurrentView("script");
+  };
+
+  const handleBackToShots = () => {
+    setSelectedShotId(null);
+    setCurrentView("shot");
   };
 
   const updateCell = (id: string, field: keyof Omit<Row, "id">, value: string) => {
@@ -229,7 +247,7 @@ export const FormBuilder = () => {
           <div className="flex flex-wrap gap-3">
             <Button onClick={addRow} className="gap-2">
               <Plus className="h-4 w-4" />
-              Add Row
+              Add Shot
             </Button>
             <Button onClick={saveManually} variant="secondary" className="gap-2">
               <Save className="h-4 w-4" />
@@ -283,212 +301,58 @@ export const FormBuilder = () => {
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
-          {/* Desktop View */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left p-4 font-semibold text-foreground w-[12%]">
-                    Segment/Scene
-                  </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[26%]">
-                    Visual
-                  </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[26%]">
-                    Audio
-                  </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[14%]">
-                    Notes
-                  </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[8%]">
-                    Words
-                  </th>
-                  <th className="text-left p-4 font-semibold text-foreground w-[10%]">
-                    Duration
-                  </th>
-                  <th className="w-16"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => {
-                  const segmentColor = getSegmentColor(row.segment);
-                  return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-border last:border-0 hover:opacity-90 transition-all border-l-4"
-                    style={{ 
-                      backgroundColor: segmentColor,
-                      borderLeftColor: segmentColor !== "transparent" ? segmentColor.replace("95%", "60%") : "transparent"
-                    }}
-                  >
-                    <td className="p-3">
-                      <Input
-                        value={row.segment}
-                        onChange={(e) => updateCell(row.id, "segment", e.target.value)}
-                        placeholder={`Scene ${index + 1}`}
-                        className="border-0 bg-transparent focus:bg-background"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <Textarea
-                        value={row.visual}
-                        onChange={(e) => updateCell(row.id, "visual", e.target.value)}
-                        placeholder="Describe what viewers will see..."
-                        className="min-h-[80px] border-0 bg-transparent focus:bg-background resize-none"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <Textarea
-                        value={row.audio}
-                        onChange={(e) => updateCell(row.id, "audio", e.target.value)}
-                        placeholder="Describe audio, narration, music..."
-                        className="min-h-[80px] border-0 bg-transparent focus:bg-background resize-none"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <Textarea
-                        value={row.notes}
-                        onChange={(e) => updateCell(row.id, "notes", e.target.value)}
-                        placeholder="Additional notes..."
-                        className="min-h-[80px] border-0 bg-transparent focus:bg-background resize-none"
-                      />
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="text-sm font-mono text-muted-foreground">
-                        {countWords(row.audio)}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Input
-                        value={useAutoDuration 
-                          ? calculateDurationFromWords(countWords(row.audio))
-                          : row.duration
-                        }
-                        onChange={(e) => updateCell(row.id, "duration", e.target.value)}
-                        placeholder="MM:SS"
-                        className="border-0 bg-transparent focus:bg-background font-mono"
-                        disabled={useAutoDuration}
-                      />
-                    </td>
-                    <td className="p-3">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteRow(row.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                )})}
-              </tbody>
-            </table>
-          </div>
+        {/* Three-Level View System */}
+        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as "production" | "shot" | "script")} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsTrigger value="production" className="gap-2">
+              <Layers className="h-4 w-4" />
+              Production
+            </TabsTrigger>
+            <TabsTrigger value="shot" className="gap-2">
+              <Layers className="h-4 w-4" />
+              Shots
+            </TabsTrigger>
+            <TabsTrigger value="script" disabled={!selectedShotId} className="gap-2">
+              <Layers className="h-4 w-4" />
+              Script
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Mobile/Tablet View */}
-          <div className="lg:hidden space-y-4 p-4">
-            {rows.map((row, index) => {
-              const segmentColor = getSegmentColor(row.segment);
-              return (
-              <div
-                key={row.id}
-                className="rounded-lg p-4 space-y-4 border-l-4"
-                style={{ 
-                  backgroundColor: segmentColor,
-                  borderLeftColor: segmentColor !== "transparent" ? segmentColor.replace("95%", "60%") : "hsl(var(--border))"
-                }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-foreground">Row {index + 1}</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteRow(row.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+          <TabsContent value="production">
+            <ProductionView 
+              rows={rows}
+              totalWords={getTotalWordCount()}
+              totalRunningTime={getTotalRunningTime()}
+              pacing={pacing}
+            />
+          </TabsContent>
 
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                    Segment/Scene
-                  </label>
-                  <Input
-                    value={row.segment}
-                    onChange={(e) => updateCell(row.id, "segment", e.target.value)}
-                    placeholder={`Scene ${index + 1}`}
-                  />
-                </div>
+          <TabsContent value="shot">
+            <ShotList 
+              rows={rows}
+              onDeleteRow={deleteRow}
+              onSelectShot={handleSelectShot}
+              getSegmentColor={getSegmentColor}
+              countWords={countWords}
+              calculateDurationFromWords={calculateDurationFromWords}
+              useAutoDuration={useAutoDuration}
+            />
+          </TabsContent>
 
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                    Visual
-                  </label>
-                  <Textarea
-                    value={row.visual}
-                    onChange={(e) => updateCell(row.id, "visual", e.target.value)}
-                    placeholder="Describe what viewers will see..."
-                    className="min-h-[80px]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                    Audio
-                  </label>
-                  <Textarea
-                    value={row.audio}
-                    onChange={(e) => updateCell(row.id, "audio", e.target.value)}
-                    placeholder="Describe audio, narration, music..."
-                    className="min-h-[80px]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                    Notes
-                  </label>
-                  <Textarea
-                    value={row.notes}
-                    onChange={(e) => updateCell(row.id, "notes", e.target.value)}
-                    placeholder="Additional notes..."
-                    className="min-h-[80px]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                      Word Count
-                    </label>
-                    <div className="bg-muted/50 rounded-md px-3 py-2 text-sm font-mono">
-                      {countWords(row.audio)} words
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                      Duration (MM:SS)
-                    </label>
-                    <Input
-                      value={useAutoDuration 
-                        ? calculateDurationFromWords(countWords(row.audio))
-                        : row.duration
-                      }
-                      onChange={(e) => updateCell(row.id, "duration", e.target.value)}
-                      placeholder="00:30"
-                      className="font-mono"
-                      disabled={useAutoDuration}
-                    />
-                  </div>
-                </div>
-              </div>
-            )})}
-          </div>
-        </div>
+          <TabsContent value="script">
+            {selectedShotId && (
+              <ScriptEditor 
+                row={rows.find(r => r.id === selectedShotId)!}
+                onUpdateCell={updateCell}
+                onBack={handleBackToShots}
+                getSegmentColor={getSegmentColor}
+                countWords={countWords}
+                calculateDurationFromWords={calculateDurationFromWords}
+                useAutoDuration={useAutoDuration}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Footer Info */}
         <div className="mt-6 text-center text-sm text-muted-foreground">
