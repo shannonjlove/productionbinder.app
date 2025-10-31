@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Download, Save, Clock, Gauge, Layers } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ProductionView } from "./ProductionView";
 import { ShotList } from "./ShotList";
 import { ScriptEditor } from "./ScriptEditor";
+import { DetailView } from "./DetailView";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -37,7 +38,22 @@ interface Row {
   duration: string; // in format MM:SS or just seconds
 }
 
+interface DetailData {
+  size: string;
+  extra: string;
+  aov: string;
+  angle: string;
+  movement: string;
+  frame: string;
+  focalLength: string;
+  setup: string;
+  camera: string;
+  equipment: string;
+  technicalNotes: string;
+}
+
 const STORAGE_KEY = "av-script-data";
+const DETAILS_STORAGE_KEY = "av-script-details";
 
 export const FormBuilder = () => {
   const [rows, setRows] = useState<Row[]>([
@@ -45,8 +61,9 @@ export const FormBuilder = () => {
   ]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
-  const [currentView, setCurrentView] = useState<"production" | "shot" | "script">("shot");
+  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail">("shot");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
+  const [shotDetails, setShotDetails] = useState<Record<string, DetailData>>({});
 
   // Get color for a segment
   const getSegmentColor = (segmentName: string): string => {
@@ -117,14 +134,52 @@ export const FormBuilder = () => {
     return formatSecondsToTime(totalSeconds);
   };
 
+  // Get or create detail data for a shot
+  const getDetailData = (shotId: string): DetailData => {
+    if (shotDetails[shotId]) {
+      return shotDetails[shotId];
+    }
+    return {
+      size: "",
+      extra: "",
+      aov: "",
+      angle: "",
+      movement: "",
+      frame: "",
+      focalLength: "",
+      setup: "",
+      camera: "",
+      equipment: "",
+      technicalNotes: "",
+    };
+  };
+
+  const updateDetailData = (shotId: string, field: keyof DetailData, value: string) => {
+    setShotDetails(prev => ({
+      ...prev,
+      [shotId]: {
+        ...getDetailData(shotId),
+        [field]: value
+      }
+    }));
+  };
+
   // Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
+    const savedDetails = localStorage.getItem(DETAILS_STORAGE_KEY);
     if (saved) {
       try {
         setRows(JSON.parse(saved));
       } catch (e) {
         console.error("Failed to load saved data");
+      }
+    }
+    if (savedDetails) {
+      try {
+        setShotDetails(JSON.parse(savedDetails));
+      } catch (e) {
+        console.error("Failed to load detail data");
       }
     }
   }, []);
@@ -133,6 +188,10 @@ export const FormBuilder = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
   }, [rows]);
+
+  useEffect(() => {
+    localStorage.setItem(DETAILS_STORAGE_KEY, JSON.stringify(shotDetails));
+  }, [shotDetails]);
 
   const addRow = () => {
     const newRow: Row = {
@@ -301,9 +360,9 @@ export const FormBuilder = () => {
           </div>
         </div>
 
-        {/* Three-Level View System */}
-        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as "production" | "shot" | "script")} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+        {/* Four-Level View System */}
+        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as "production" | "shot" | "script" | "detail")} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="production" className="gap-2">
               <Layers className="h-4 w-4" />
               Production
@@ -315,6 +374,10 @@ export const FormBuilder = () => {
             <TabsTrigger value="script" disabled={!selectedShotId} className="gap-2">
               <Layers className="h-4 w-4" />
               Script
+            </TabsTrigger>
+            <TabsTrigger value="detail" disabled={!selectedShotId} className="gap-2">
+              <Camera className="h-4 w-4" />
+              Details
             </TabsTrigger>
           </TabsList>
 
@@ -349,6 +412,18 @@ export const FormBuilder = () => {
                 countWords={countWords}
                 calculateDurationFromWords={calculateDurationFromWords}
                 useAutoDuration={useAutoDuration}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="detail">
+            {selectedShotId && (
+              <DetailView 
+                row={rows.find(r => r.id === selectedShotId)!}
+                details={getDetailData(selectedShotId)}
+                onUpdateDetail={updateDetailData}
+                onBack={handleBackToShots}
+                getSegmentColor={getSegmentColor}
               />
             )}
           </TabsContent>
