@@ -530,6 +530,74 @@ export const FormBuilder = () => {
     toast.success("Exported successfully");
   };
 
+  const exportToMarkdown = () => {
+    let markdown = `# AV Script\n\n`;
+    markdown += `**Total Words:** ${getTotalWordCount()}\n\n`;
+    markdown += `**Total Running Time:** ${getTotalRunningTime()}\n\n`;
+    markdown += `**Pacing:** ${pacing}\n\n`;
+    markdown += `---\n\n`;
+
+    sequences.forEach((seq, seqIndex) => {
+      markdown += `## ${seqIndex + 1}. ${seq.name}\n\n`;
+      
+      seq.scenes.forEach((scene, sceneIndex) => {
+        markdown += `### ${seqIndex + 1}.${sceneIndex + 1} ${scene.name}\n\n`;
+        
+        scene.shots.forEach((shot, shotIndex) => {
+          const wordCount = countWords(shot.audio);
+          const duration = useAutoDuration 
+            ? calculateDurationFromWords(wordCount)
+            : shot.duration;
+          
+          markdown += `#### Shot ${seqIndex + 1}.${sceneIndex + 1}.${shotIndex + 1}\n\n`;
+          
+          if (shot.segment) {
+            markdown += `**Segment:** ${shot.segment}\n\n`;
+          }
+          
+          markdown += `**Visual:**\n${shot.visual}\n\n`;
+          markdown += `**Audio:**\n${shot.audio}\n\n`;
+          
+          if (shot.notes) {
+            markdown += `**Notes:**\n${shot.notes}\n\n`;
+          }
+          
+          markdown += `**Duration:** ${duration} | **Word Count:** ${wordCount}\n\n`;
+          
+          // Add shot details if available
+          const details = shotDetails[shot.id];
+          if (details && Object.values(details).some(v => v.trim() !== "")) {
+            markdown += `**Technical Details:**\n\n`;
+            markdown += `| Category | Value |\n`;
+            markdown += `|----------|-------|\n`;
+            if (details.size) markdown += `| Size | ${details.size} |\n`;
+            if (details.extra) markdown += `| Extra | ${details.extra} |\n`;
+            if (details.aov) markdown += `| AOV | ${details.aov} |\n`;
+            if (details.angle) markdown += `| Angle | ${details.angle} |\n`;
+            if (details.movement) markdown += `| Movement | ${details.movement} |\n`;
+            if (details.frame) markdown += `| Frame | ${details.frame} |\n`;
+            if (details.focalLength) markdown += `| Focal Length | ${details.focalLength} |\n`;
+            if (details.setup) markdown += `| Setup | ${details.setup} |\n`;
+            if (details.camera) markdown += `| Camera | ${details.camera} |\n`;
+            if (details.equipment) markdown += `| Equipment | ${details.equipment} |\n`;
+            if (details.technicalNotes) markdown += `| Technical Notes | ${details.technicalNotes} |\n`;
+            markdown += `\n`;
+          }
+          
+          markdown += `---\n\n`;
+        });
+      });
+    });
+
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `av-script-${new Date().toISOString().split("T")[0]}.md`;
+    a.click();
+    toast.success("Markdown exported successfully");
+  };
+
   const saveManually = () => {
     localStorage.setItem(HIERARCHY_STORAGE_KEY, JSON.stringify(sequences));
     toast.success("Saved successfully");
@@ -565,6 +633,10 @@ export const FormBuilder = () => {
             <Button onClick={exportToCSV} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export CSV
+            </Button>
+            <Button onClick={exportToMarkdown} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export Markdown
             </Button>
           </div>
 
