@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Download, Save, Clock, Gauge, Layers, Camera } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +8,7 @@ import { ProductionView } from "./ProductionView";
 import { ShotList } from "./ShotList";
 import { ScriptEditor } from "./ScriptEditor";
 import { DetailView } from "./DetailView";
+import { InspectorSidebar } from "./InspectorSidebar";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -66,9 +67,32 @@ interface DetailData {
   technicalNotes: string;
 }
 
+export interface ShotFormat {
+  fontSize: string;
+  fontWeight: string;
+  textAlign: string;
+  segmentColor: string;
+  visualColor: string;
+  audioColor: string;
+  notesColor: string;
+  backgroundColor: string;
+}
+
 const STORAGE_KEY = "av-script-data";
 const DETAILS_STORAGE_KEY = "av-script-details";
 const HIERARCHY_STORAGE_KEY = "av-script-hierarchy";
+const FORMAT_STORAGE_KEY = "av-script-formats";
+
+const DEFAULT_FORMAT: ShotFormat = {
+  fontSize: "14px",
+  fontWeight: "normal",
+  textAlign: "left",
+  segmentColor: "hsl(var(--foreground))",
+  visualColor: "hsl(var(--muted-foreground))",
+  audioColor: "hsl(var(--muted-foreground))",
+  notesColor: "hsl(var(--muted-foreground))",
+  backgroundColor: "transparent",
+};
 
 export const FormBuilder = () => {
   const [sequences, setSequences] = useState<Sequence[]>([]);
@@ -77,6 +101,8 @@ export const FormBuilder = () => {
   const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail">("shot");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [shotDetails, setShotDetails] = useState<Record<string, DetailData>>({});
+  const [shotFormats, setShotFormats] = useState<Record<string, ShotFormat>>({});
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   // Helper to get all shots from sequences
   const getAllShots = (): Shot[] => {
@@ -207,6 +233,20 @@ export const FormBuilder = () => {
     }));
   };
 
+  const getShotFormat = (shotId: string): ShotFormat => {
+    return shotFormats[shotId] || DEFAULT_FORMAT;
+  };
+
+  const updateShotFormat = (shotId: string, format: Partial<ShotFormat>) => {
+    setShotFormats(prev => ({
+      ...prev,
+      [shotId]: {
+        ...getShotFormat(shotId),
+        ...format
+      }
+    }));
+  };
+
   // Migration: Load old data and convert to new structure
   useEffect(() => {
     const savedHierarchy = localStorage.getItem(HIERARCHY_STORAGE_KEY);
@@ -315,6 +355,15 @@ export const FormBuilder = () => {
         console.error("Failed to load detail data");
       }
     }
+
+    const savedFormats = localStorage.getItem(FORMAT_STORAGE_KEY);
+    if (savedFormats) {
+      try {
+        setShotFormats(JSON.parse(savedFormats));
+      } catch (e) {
+        console.error("Failed to load format data");
+      }
+    }
   }, []);
 
   // Auto-save to localStorage
@@ -327,6 +376,10 @@ export const FormBuilder = () => {
   useEffect(() => {
     localStorage.setItem(DETAILS_STORAGE_KEY, JSON.stringify(shotDetails));
   }, [shotDetails]);
+
+  useEffect(() => {
+    localStorage.setItem(FORMAT_STORAGE_KEY, JSON.stringify(shotFormats));
+  }, [shotFormats]);
 
   const addSequence = () => {
     const newSequence: Sequence = {
@@ -606,17 +659,19 @@ export const FormBuilder = () => {
   const selectedShot = selectedShotId ? findShot(selectedShotId) : null;
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            AV Script Builder
-          </h1>
-          <p className="text-muted-foreground">
-            Create professional audio-visual scripts with hierarchical organization
-          </p>
-        </header>
+    <div className="min-h-screen bg-background flex">
+      {/* Main Content */}
+      <div className="flex-1 p-4 md:p-8 overflow-auto">
+        <div className="mx-auto max-w-7xl">
+          {/* Header */}
+          <header className="mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              AV Script Builder
+            </h1>
+            <p className="text-muted-foreground">
+              Create professional audio-visual scripts with hierarchical organization
+            </p>
+          </header>
 
         {/* Controls Section */}
         <div className="mb-6 space-y-4">
@@ -637,6 +692,19 @@ export const FormBuilder = () => {
             <Button onClick={exportToMarkdown} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export Markdown
+            </Button>
+            <Button 
+              onClick={() => {
+                setInspectorOpen(!inspectorOpen);
+                if (!inspectorOpen && !selectedShotId && getAllShots().length > 0) {
+                  setSelectedShotId(getAllShots()[0].id);
+                }
+              }} 
+              variant={inspectorOpen ? "default" : "outline"} 
+              className="gap-2 ml-auto"
+            >
+              <Palette className="h-4 w-4" />
+              Inspector
             </Button>
           </div>
 
@@ -767,5 +835,16 @@ export const FormBuilder = () => {
         </div>
       </div>
     </div>
-  );
+
+    {/* Inspector Sidebar */}
+    {inspectorOpen && (
+      <InspectorSidebar
+        shot={selectedShot}
+        onClose={() => setInspectorOpen(false)}
+        onUpdateFormat={updateShotFormat}
+        currentFormat={selectedShotId ? getShotFormat(selectedShotId) : DEFAULT_FORMAT}
+      />
+    )}
+  </div>
+);
 };
