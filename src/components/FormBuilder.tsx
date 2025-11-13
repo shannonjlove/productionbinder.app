@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,10 @@ import { ShotList } from "./ShotList";
 import { ScriptEditor } from "./ScriptEditor";
 import { DetailView } from "./DetailView";
 import { InspectorSidebar } from "./InspectorSidebar";
+import { CharacterList, type Character } from "./CharacterList";
+import { PropsList, type Prop } from "./PropsList";
+import { CueList, type Cue } from "./CueList";
+import { StudioTimer } from "./StudioTimer";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -82,6 +86,9 @@ const STORAGE_KEY = "av-script-data";
 const DETAILS_STORAGE_KEY = "av-script-details";
 const HIERARCHY_STORAGE_KEY = "av-script-hierarchy";
 const FORMAT_STORAGE_KEY = "av-script-formats";
+const CHARACTERS_STORAGE_KEY = "av-script-characters";
+const PROPS_STORAGE_KEY = "av-script-props";
+const CUES_STORAGE_KEY = "av-script-cues";
 
 const DEFAULT_FORMAT: ShotFormat = {
   fontSize: "14px",
@@ -98,11 +105,15 @@ export const FormBuilder = () => {
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
-  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail">("shot");
+  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail" | "characters" | "props" | "cues">("shot");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [shotDetails, setShotDetails] = useState<Record<string, DetailData>>({});
   const [shotFormats, setShotFormats] = useState<Record<string, ShotFormat>>({});
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [props, setProps] = useState<Prop[]>([]);
+  const [cues, setCues] = useState<Cue[]>([]);
+  const [showTimer, setShowTimer] = useState(false);
 
   // Helper to get all shots from sequences
   const getAllShots = (): Shot[] => {
@@ -247,6 +258,76 @@ export const FormBuilder = () => {
     }));
   };
 
+  // Character handlers
+  const addCharacter = () => {
+    const newCharacter: Character = {
+      id: `char-${Date.now()}`,
+      name: "",
+      role: "",
+      scenes: []
+    };
+    setCharacters(prev => [...prev, newCharacter]);
+  };
+
+  const deleteCharacter = (id: string) => {
+    setCharacters(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateCharacter = (id: string, field: keyof Character, value: any) => {
+    setCharacters(prev => prev.map(c => 
+      c.id === id ? { ...c, [field]: value } : c
+    ));
+  };
+
+  // Props handlers
+  const addProp = () => {
+    const newProp: Prop = {
+      id: `prop-${Date.now()}`,
+      number: props.length + 1,
+      name: "",
+      description: "",
+      scenes: []
+    };
+    setProps(prev => [...prev, newProp]);
+  };
+
+  const deleteProp = (id: string) => {
+    setProps(prev => prev.filter(p => p.id !== id));
+  };
+
+  const updateProp = (id: string, field: keyof Prop, value: any) => {
+    setProps(prev => prev.map(p => 
+      p.id === id ? { ...p, [field]: value } : p
+    ));
+  };
+
+  // Cue handlers
+  const addCue = () => {
+    const newCue: Cue = {
+      id: `cue-${Date.now()}`,
+      number: cues.length + 1,
+      description: "",
+      time: "00:00",
+      sceneId: "",
+      type: "other"
+    };
+    setCues(prev => [...prev, newCue]);
+  };
+
+  const deleteCue = (id: string) => {
+    setCues(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateCue = (id: string, field: keyof Cue, value: any) => {
+    setCues(prev => prev.map(c => 
+      c.id === id ? { ...c, [field]: value } : c
+    ));
+  };
+
+  const reorderCues = (newCues: Cue[]) => {
+    setCues(newCues);
+  };
+
   // Migration: Load old data and convert to new structure
   useEffect(() => {
     const savedHierarchy = localStorage.getItem(HIERARCHY_STORAGE_KEY);
@@ -364,6 +445,33 @@ export const FormBuilder = () => {
         console.error("Failed to load format data");
       }
     }
+
+    const savedCharacters = localStorage.getItem(CHARACTERS_STORAGE_KEY);
+    if (savedCharacters) {
+      try {
+        setCharacters(JSON.parse(savedCharacters));
+      } catch (e) {
+        console.error("Failed to load characters data");
+      }
+    }
+
+    const savedProps = localStorage.getItem(PROPS_STORAGE_KEY);
+    if (savedProps) {
+      try {
+        setProps(JSON.parse(savedProps));
+      } catch (e) {
+        console.error("Failed to load props data");
+      }
+    }
+
+    const savedCues = localStorage.getItem(CUES_STORAGE_KEY);
+    if (savedCues) {
+      try {
+        setCues(JSON.parse(savedCues));
+      } catch (e) {
+        console.error("Failed to load cues data");
+      }
+    }
   }, []);
 
   // Auto-save to localStorage
@@ -380,6 +488,18 @@ export const FormBuilder = () => {
   useEffect(() => {
     localStorage.setItem(FORMAT_STORAGE_KEY, JSON.stringify(shotFormats));
   }, [shotFormats]);
+
+  useEffect(() => {
+    localStorage.setItem(CHARACTERS_STORAGE_KEY, JSON.stringify(characters));
+  }, [characters]);
+
+  useEffect(() => {
+    localStorage.setItem(PROPS_STORAGE_KEY, JSON.stringify(props));
+  }, [props]);
+
+  useEffect(() => {
+    localStorage.setItem(CUES_STORAGE_KEY, JSON.stringify(cues));
+  }, [cues]);
 
   const addSequence = () => {
     const newSequence: Sequence = {
@@ -746,13 +866,29 @@ export const FormBuilder = () => {
                 <span className="text-sm text-muted-foreground">Total Time: </span>
                 <span className="font-bold text-primary text-lg">{getTotalRunningTime()}</span>
               </div>
+              <Button
+                variant={showTimer ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowTimer(!showTimer)}
+                className="gap-2"
+              >
+                <Timer className="h-4 w-4" />
+                {showTimer ? "Hide Timer" : "Show Timer"}
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Four-Level View System */}
-        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as "production" | "shot" | "script" | "detail")} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        {/* Studio Timer */}
+        {showTimer && (
+          <div className="mb-6">
+            <StudioTimer />
+          </div>
+        )}
+
+        {/* Seven-Level View System */}
+        <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as any)} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7 max-w-5xl">
             <TabsTrigger value="production" className="gap-2">
               <Layers className="h-4 w-4" />
               Production
@@ -767,7 +903,19 @@ export const FormBuilder = () => {
             </TabsTrigger>
             <TabsTrigger value="detail" disabled={!selectedShotId} className="gap-2">
               <Camera className="h-4 w-4" />
-              Details
+              Detail
+            </TabsTrigger>
+            <TabsTrigger value="characters" className="gap-2">
+              <User className="h-4 w-4" />
+              Characters
+            </TabsTrigger>
+            <TabsTrigger value="props" className="gap-2">
+              <Package className="h-4 w-4" />
+              Props
+            </TabsTrigger>
+            <TabsTrigger value="cues" className="gap-2">
+              <Radio className="h-4 w-4" />
+              Cues
             </TabsTrigger>
           </TabsList>
 
@@ -826,6 +974,37 @@ export const FormBuilder = () => {
                 getSegmentColor={getSegmentColor}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="characters">
+            <CharacterList
+              characters={characters}
+              sequences={sequences}
+              onAddCharacter={addCharacter}
+              onDeleteCharacter={deleteCharacter}
+              onUpdateCharacter={updateCharacter}
+            />
+          </TabsContent>
+
+          <TabsContent value="props">
+            <PropsList
+              props={props}
+              sequences={sequences}
+              onAddProp={addProp}
+              onDeleteProp={deleteProp}
+              onUpdateProp={updateProp}
+            />
+          </TabsContent>
+
+          <TabsContent value="cues">
+            <CueList
+              cues={cues}
+              sequences={sequences}
+              onAddCue={addCue}
+              onDeleteCue={deleteCue}
+              onUpdateCue={updateCue}
+              onReorderCues={reorderCues}
+            />
           </TabsContent>
         </Tabs>
 
