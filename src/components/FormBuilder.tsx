@@ -29,13 +29,27 @@ const SEGMENT_COLORS = [
   "hsl(190, 100%, 95%)",  // Light cyan
 ];
 
-interface Row {
+export interface Shot {
   id: string;
+  sceneId: string;
   segment: string;
   visual: string;
   audio: string;
   notes: string;
-  duration: string; // in format MM:SS or just seconds
+  duration: string;
+}
+
+export interface Scene {
+  id: string;
+  sequenceId: string;
+  name: string;
+  shots: Shot[];
+}
+
+export interface Sequence {
+  id: string;
+  name: string;
+  scenes: Scene[];
 }
 
 interface DetailData {
@@ -54,25 +68,54 @@ interface DetailData {
 
 const STORAGE_KEY = "av-script-data";
 const DETAILS_STORAGE_KEY = "av-script-details";
+const HIERARCHY_STORAGE_KEY = "av-script-hierarchy";
 
 export const FormBuilder = () => {
-  const [rows, setRows] = useState<Row[]>([
-    { id: "1", segment: "", visual: "", audio: "", notes: "", duration: "" },
-  ]);
+  const [sequences, setSequences] = useState<Sequence[]>([]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
   const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail">("shot");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [shotDetails, setShotDetails] = useState<Record<string, DetailData>>({});
 
+  // Helper to get all shots from sequences
+  const getAllShots = (): Shot[] => {
+    const shots: Shot[] = [];
+    sequences.forEach(seq => {
+      seq.scenes.forEach(scene => {
+        shots.push(...scene.shots);
+      });
+    });
+    return shots;
+  };
+
+  // Helper to find a shot by id
+  const findShot = (shotId: string): Shot | undefined => {
+    return getAllShots().find(s => s.id === shotId);
+  };
+
+  // Helper to find scene by id
+  const findScene = (sceneId: string): Scene | undefined => {
+    for (const seq of sequences) {
+      const scene = seq.scenes.find(s => s.id === sceneId);
+      if (scene) return scene;
+    }
+    return undefined;
+  };
+
+  // Helper to find sequence by id
+  const findSequence = (sequenceId: string): Sequence | undefined => {
+    return sequences.find(s => s.id === sequenceId);
+  };
+
   // Get color for a segment
   const getSegmentColor = (segmentName: string): string => {
     if (!segmentName || segmentName.trim() === "") return "transparent";
     
-    // Get all unique segments in order of appearance
+    const allShots = getAllShots();
     const uniqueSegments: string[] = [];
-    rows.forEach(row => {
-      const seg = row.segment.trim().toLowerCase();
+    allShots.forEach(shot => {
+      const seg = shot.segment.trim().toLowerCase();
       if (seg && !uniqueSegments.includes(seg)) {
         uniqueSegments.push(seg);
       }
@@ -99,7 +142,7 @@ export const FormBuilder = () => {
 
   // Get total word count
   const getTotalWordCount = (): number => {
-    return rows.reduce((sum, row) => sum + countWords(row.audio), 0);
+    return getAllShots().reduce((sum, shot) => sum + countWords(shot.audio), 0);
   };
 
   // Parse duration string (MM:SS or SS) to total seconds
@@ -125,10 +168,10 @@ export const FormBuilder = () => {
 
   // Calculate total running time
   const getTotalRunningTime = (): string => {
-    const totalSeconds = rows.reduce((sum, row) => {
+    const totalSeconds = getAllShots().reduce((sum, shot) => {
       const duration = useAutoDuration 
-        ? calculateDurationFromWords(countWords(row.audio))
-        : row.duration;
+        ? calculateDurationFromWords(countWords(shot.audio))
+        : shot.duration;
       return sum + parseTimeToSeconds(duration);
     }, 0);
     return formatSecondsToTime(totalSeconds);
@@ -164,17 +207,107 @@ export const FormBuilder = () => {
     }));
   };
 
-  // Load from localStorage on mount
+  // Migration: Load old data and convert to new structure
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const savedHierarchy = localStorage.getItem(HIERARCHY_STORAGE_KEY);
     const savedDetails = localStorage.getItem(DETAILS_STORAGE_KEY);
-    if (saved) {
+    
+    if (savedHierarchy) {
       try {
-        setRows(JSON.parse(saved));
+        setSequences(JSON.parse(savedHierarchy));
       } catch (e) {
-        console.error("Failed to load saved data");
+        console.error("Failed to load hierarchy data");
+      }
+    } else {
+      // Check for old data format and migrate
+      const oldData = localStorage.getItem(STORAGE_KEY);
+      if (oldData) {
+        try {
+          const oldRows = JSON.parse(oldData);
+          // Migrate to new structure
+          const defaultSequence: Sequence = {
+            id: "seq-1",
+            name: "Sequence 1",
+            scenes: []
+          };
+
+          // Group old rows by segment into scenes
+          const segmentMap = new Map<string, Shot[]>();
+          oldRows.forEach((row: any) => {
+            const segment = row.segment || "Scene 1";
+            if (!segmentMap.has(segment)) {
+              segmentMap.set(segment, []);
+            }
+            segmentMap.get(segment)!.push({
+              id: row.id,
+              sceneId: "",
+              segment: row.segment,
+              visual: row.visual,
+              audio: row.audio,
+              notes: row.notes,
+              duration: row.duration
+            });
+          });
+
+          // Create scenes from segments
+          let sceneIndex = 1;
+          segmentMap.forEach((shots, segmentName) => {
+            const scene: Scene = {
+              id: `scene-${sceneIndex}`,
+              sequenceId: "seq-1",
+              name: segmentName || `Scene ${sceneIndex}`,
+              shots: shots.map(s => ({ ...s, sceneId: `scene-${sceneIndex}` }))
+            };
+            defaultSequence.scenes.push(scene);
+            sceneIndex++;
+          });
+
+          setSequences([defaultSequence]);
+        } catch (e) {
+          console.error("Failed to migrate old data");
+          // Initialize with default structure
+          setSequences([{
+            id: "seq-1",
+            name: "Sequence 1",
+            scenes: [{
+              id: "scene-1",
+              sequenceId: "seq-1",
+              name: "Scene 1",
+              shots: [{
+                id: "1",
+                sceneId: "scene-1",
+                segment: "",
+                visual: "",
+                audio: "",
+                notes: "",
+                duration: ""
+              }]
+            }]
+          }]);
+        }
+      } else {
+        // Initialize with default structure
+        setSequences([{
+          id: "seq-1",
+          name: "Sequence 1",
+          scenes: [{
+            id: "scene-1",
+            sequenceId: "seq-1",
+            name: "Scene 1",
+            shots: [{
+              id: "1",
+              sceneId: "scene-1",
+              segment: "",
+              visual: "",
+              audio: "",
+              notes: "",
+              duration: ""
+            }]
+          }]
+        }]);
       }
     }
+
     if (savedDetails) {
       try {
         setShotDetails(JSON.parse(savedDetails));
@@ -186,37 +319,128 @@ export const FormBuilder = () => {
 
   // Auto-save to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
-  }, [rows]);
+    if (sequences.length > 0) {
+      localStorage.setItem(HIERARCHY_STORAGE_KEY, JSON.stringify(sequences));
+    }
+  }, [sequences]);
 
   useEffect(() => {
     localStorage.setItem(DETAILS_STORAGE_KEY, JSON.stringify(shotDetails));
   }, [shotDetails]);
 
-  const addRow = () => {
-    const newRow: Row = {
-      id: Date.now().toString(),
-      segment: "",
-      visual: "",
-      audio: "",
-      notes: "",
-      duration: "",
+  const addSequence = () => {
+    const newSequence: Sequence = {
+      id: `seq-${Date.now()}`,
+      name: `Sequence ${sequences.length + 1}`,
+      scenes: []
     };
-    setRows([...rows, newRow]);
-    toast.success("Row added");
+    setSequences([...sequences, newSequence]);
+    toast.success("Sequence added");
   };
 
-  const deleteRow = (id: string) => {
-    if (rows.length === 1) {
-      toast.error("Cannot delete the last row");
+  const addScene = (sequenceId: string) => {
+    setSequences(sequences.map(seq => {
+      if (seq.id === sequenceId) {
+        const newScene: Scene = {
+          id: `scene-${Date.now()}`,
+          sequenceId,
+          name: `Scene ${seq.scenes.length + 1}`,
+          shots: []
+        };
+        return { ...seq, scenes: [...seq.scenes, newScene] };
+      }
+      return seq;
+    }));
+    toast.success("Scene added");
+  };
+
+  const addShot = (sceneId: string) => {
+    setSequences(sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.map(scene => {
+        if (scene.id === sceneId) {
+          const newShot: Shot = {
+            id: `shot-${Date.now()}`,
+            sceneId,
+            segment: scene.name,
+            visual: "",
+            audio: "",
+            notes: "",
+            duration: "",
+          };
+          return { ...scene, shots: [...scene.shots, newShot] };
+        }
+        return scene;
+      })
+    })));
+    toast.success("Shot added");
+  };
+
+  const deleteSequence = (sequenceId: string) => {
+    if (sequences.length === 1) {
+      toast.error("Cannot delete the last sequence");
       return;
     }
-    setRows(rows.filter((row) => row.id !== id));
-    if (selectedShotId === id) {
+    setSequences(sequences.filter(seq => seq.id !== sequenceId));
+    toast.success("Sequence deleted");
+  };
+
+  const deleteScene = (sceneId: string) => {
+    setSequences(sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.filter(scene => scene.id !== sceneId)
+    })).filter(seq => seq.scenes.length > 0));
+    toast.success("Scene deleted");
+  };
+
+  const deleteShot = (shotId: string) => {
+    setSequences(sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.map(scene => ({
+        ...scene,
+        shots: scene.shots.filter(shot => shot.id !== shotId)
+      }))
+    })));
+    
+    if (selectedShotId === shotId) {
       setSelectedShotId(null);
       setCurrentView("shot");
     }
-    toast.success("Row deleted");
+    toast.success("Shot deleted");
+  };
+
+  const updateSequenceName = (sequenceId: string, name: string) => {
+    setSequences(sequences.map(seq => 
+      seq.id === sequenceId ? { ...seq, name } : seq
+    ));
+  };
+
+  const updateSceneName = (sceneId: string, name: string) => {
+    setSequences(sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.map(scene =>
+        scene.id === sceneId ? { ...scene, name } : scene
+      )
+    })));
+  };
+
+  const reorderShots = (sceneId: string, reorderedShots: Shot[]) => {
+    setSequences(sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.map(scene =>
+        scene.id === sceneId ? { ...scene, shots: reorderedShots } : scene
+      )
+    })));
+  };
+
+  const reorderScenes = (sequenceId: string, reorderedScenes: Scene[]) => {
+    setSequences(sequences.map(seq =>
+      seq.id === sequenceId ? { ...seq, scenes: reorderedScenes } : seq
+    ));
+  };
+
+  const reorderSequences = (reorderedSequences: Sequence[]) => {
+    setSequences(reorderedSequences);
   };
 
   const handleSelectShot = (id: string) => {
@@ -229,50 +453,74 @@ export const FormBuilder = () => {
     setCurrentView("shot");
   };
 
-  const updateCell = (id: string, field: keyof Omit<Row, "id">, value: string) => {
-    setRows(rows.map((row) => {
-      if (row.id !== id) return row;
-      const updated = { ...row, [field]: value };
-      
-      // Auto-update duration when audio changes and auto-duration is enabled
-      if (field === "audio" && useAutoDuration) {
-        const wordCount = countWords(value);
-        updated.duration = calculateDurationFromWords(wordCount);
-      }
-      
-      return updated;
-    }));
+  const updateShot = (shotId: string, field: keyof Omit<Shot, "id" | "sceneId">, value: string) => {
+    setSequences(sequences.map(seq => ({
+      ...seq,
+      scenes: seq.scenes.map(scene => ({
+        ...scene,
+        shots: scene.shots.map(shot => {
+          if (shot.id !== shotId) return shot;
+          const updated = { ...shot, [field]: value };
+          
+          // Auto-update duration when audio changes and auto-duration is enabled
+          if (field === "audio" && useAutoDuration) {
+            const wordCount = countWords(value);
+            updated.duration = calculateDurationFromWords(wordCount);
+          }
+          
+          return updated;
+        })
+      }))
+    })));
   };
 
   // Update all durations when pacing changes
   useEffect(() => {
     if (useAutoDuration) {
-      setRows(rows.map(row => ({
-        ...row,
-        duration: calculateDurationFromWords(countWords(row.audio))
+      setSequences(sequences.map(seq => ({
+        ...seq,
+        scenes: seq.scenes.map(scene => ({
+          ...scene,
+          shots: scene.shots.map(shot => ({
+            ...shot,
+            duration: calculateDurationFromWords(countWords(shot.audio))
+          }))
+        }))
       })));
     }
   }, [pacing, useAutoDuration]);
 
   const exportToCSV = () => {
-    const headers = ["Segment/Scene", "Visual", "Audio", "Word Count", "Duration"];
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => {
-        const wordCount = countWords(row.audio);
-        const duration = useAutoDuration 
-          ? calculateDurationFromWords(wordCount)
-          : row.duration;
-        return [row.segment, row.visual, row.audio, wordCount.toString(), duration]
-          .map((cell) => `"${cell.replace(/"/g, '""')}"`)
-          .join(",");
-      }),
-      "",
-      `"Total Words:",,,"${getTotalWordCount()}",""`,
-      `"Total Running Time:",,,,"${getTotalRunningTime()}"`,
-      `"Pacing:",,,"${pacing}",""`,
-    ].join("\n");
+    const headers = ["Sequence", "Scene", "Shot", "Segment", "Visual", "Audio", "Word Count", "Duration"];
+    const rows: string[] = [headers.join(",")];
+    
+    sequences.forEach(seq => {
+      seq.scenes.forEach(scene => {
+        scene.shots.forEach(shot => {
+          const wordCount = countWords(shot.audio);
+          const duration = useAutoDuration 
+            ? calculateDurationFromWords(wordCount)
+            : shot.duration;
+          rows.push([
+            seq.name,
+            scene.name,
+            shot.id,
+            shot.segment,
+            shot.visual,
+            shot.audio,
+            wordCount.toString(),
+            duration
+          ].map(cell => `"${cell.replace(/"/g, '""')}"`).join(","));
+        });
+      });
+    });
 
+    rows.push("");
+    rows.push(`"Total Words:",,,,,"${getTotalWordCount()}",`);
+    rows.push(`"Total Running Time:","",,,,"","${getTotalRunningTime()}"`);
+    rows.push(`"Pacing:",,,,,"${pacing}",`);
+
+    const csvContent = rows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -283,9 +531,11 @@ export const FormBuilder = () => {
   };
 
   const saveManually = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+    localStorage.setItem(HIERARCHY_STORAGE_KEY, JSON.stringify(sequences));
     toast.success("Saved successfully");
   };
+
+  const selectedShot = selectedShotId ? findShot(selectedShotId) : null;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -296,7 +546,7 @@ export const FormBuilder = () => {
             AV Script Builder
           </h1>
           <p className="text-muted-foreground">
-            Create professional audio-visual scripts with ease
+            Create professional audio-visual scripts with hierarchical organization
           </p>
         </header>
 
@@ -304,9 +554,9 @@ export const FormBuilder = () => {
         <div className="mb-6 space-y-4">
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
-            <Button onClick={addRow} className="gap-2">
+            <Button onClick={addSequence} className="gap-2">
               <Plus className="h-4 w-4" />
-              Add Shot
+              Add Sequence
             </Button>
             <Button onClick={saveManually} variant="secondary" className="gap-2">
               <Save className="h-4 w-4" />
@@ -383,7 +633,7 @@ export const FormBuilder = () => {
 
           <TabsContent value="production">
             <ProductionView 
-              rows={rows}
+              sequences={sequences}
               totalWords={getTotalWordCount()}
               totalRunningTime={getTotalRunningTime()}
               pacing={pacing}
@@ -392,8 +642,18 @@ export const FormBuilder = () => {
 
           <TabsContent value="shot">
             <ShotList 
-              rows={rows}
-              onDeleteRow={deleteRow}
+              sequences={sequences}
+              onAddSequence={addSequence}
+              onAddScene={addScene}
+              onAddShot={addShot}
+              onDeleteSequence={deleteSequence}
+              onDeleteScene={deleteScene}
+              onDeleteShot={deleteShot}
+              onUpdateSequenceName={updateSequenceName}
+              onUpdateSceneName={updateSceneName}
+              onReorderShots={reorderShots}
+              onReorderScenes={reorderScenes}
+              onReorderSequences={reorderSequences}
               onSelectShot={handleSelectShot}
               getSegmentColor={getSegmentColor}
               countWords={countWords}
@@ -403,10 +663,10 @@ export const FormBuilder = () => {
           </TabsContent>
 
           <TabsContent value="script">
-            {selectedShotId && (
+            {selectedShot && (
               <ScriptEditor 
-                row={rows.find(r => r.id === selectedShotId)!}
-                onUpdateCell={updateCell}
+                row={selectedShot}
+                onUpdateCell={updateShot}
                 onBack={handleBackToShots}
                 getSegmentColor={getSegmentColor}
                 countWords={countWords}
@@ -417,10 +677,10 @@ export const FormBuilder = () => {
           </TabsContent>
 
           <TabsContent value="detail">
-            {selectedShotId && (
+            {selectedShot && (
               <DetailView 
-                row={rows.find(r => r.id === selectedShotId)!}
-                details={getDetailData(selectedShotId)}
+                row={selectedShot}
+                details={getDetailData(selectedShotId!)}
                 onUpdateDetail={updateDetailData}
                 onBack={handleBackToShots}
                 getSegmentColor={getSegmentColor}

@@ -5,14 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface Row {
-  id: string;
-  segment: string;
-  visual: string;
-  audio: string;
-  notes: string;
-  duration: string;
-}
+import type { Shot } from "./FormBuilder";
 
 interface DetailData {
   size: string;
@@ -29,7 +22,7 @@ interface DetailData {
 }
 
 interface DetailViewProps {
-  row: Row;
+  row: Shot;
   details: DetailData;
   onUpdateDetail: (id: string, field: keyof DetailData, value: string) => void;
   onBack: () => void;

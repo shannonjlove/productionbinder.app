@@ -4,18 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-interface Row {
-  id: string;
-  segment: string;
-  visual: string;
-  audio: string;
-  notes: string;
-  duration: string;
-}
+import type { Shot } from "./FormBuilder";
 
 interface ScriptEditorProps {
-  row: Row;
-  onUpdateCell: (id: string, field: keyof Omit<Row, "id">, value: string) => void;
+  row: Shot;
+  onUpdateCell: (id: string, field: keyof Omit<Shot, "id" | "sceneId">, value: string) => void;
   onBack: () => void;
   getSegmentColor: (segment: string) => string;
   countWords: (text: string) => number;
