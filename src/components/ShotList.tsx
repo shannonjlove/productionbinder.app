@@ -551,6 +551,17 @@ export const ShotList = ({
     }
   };
 
+  const expandAll = () => {
+    setExpandedSequences(new Set(sequences.map(s => s.id)));
+    const allSceneIds = sequences.flatMap(seq => seq.scenes.map(sc => sc.id));
+    setExpandedScenes(new Set(allSceneIds));
+  };
+
+  const collapseAll = () => {
+    setExpandedSequences(new Set());
+    setExpandedScenes(new Set());
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -558,10 +569,18 @@ export const ShotList = ({
           <h2 className="text-2xl font-bold text-foreground mb-2">Shot List</h2>
           <p className="text-muted-foreground">Organize your production with sequences, scenes, and shots</p>
         </div>
-        <Button onClick={onAddSequence} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Sequence
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={expandAll} variant="outline" size="sm">
+            Expand All
+          </Button>
+          <Button onClick={collapseAll} variant="outline" size="sm">
+            Collapse All
+          </Button>
+          <Button onClick={onAddSequence} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Sequence
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
