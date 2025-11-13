@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer, CheckCircle2, Users, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,9 @@ import { CharacterList, type Character } from "./CharacterList";
 import { PropsList, type Prop } from "./PropsList";
 import { CueList, type Cue } from "./CueList";
 import { StudioTimer } from "./StudioTimer";
+import { ProductionChecklist, type ChecklistCategory, type ChecklistItem } from "./ProductionChecklist";
+import { CrewContacts, type CrewMember } from "./CrewContacts";
+import { CallSheet, type CallSheetData } from "./CallSheet";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -89,6 +92,9 @@ const FORMAT_STORAGE_KEY = "av-script-formats";
 const CHARACTERS_STORAGE_KEY = "av-script-characters";
 const PROPS_STORAGE_KEY = "av-script-props";
 const CUES_STORAGE_KEY = "av-script-cues";
+const CHECKLIST_STORAGE_KEY = "av-script-checklist";
+const CREW_STORAGE_KEY = "av-script-crew";
+const CALLSHEET_STORAGE_KEY = "av-script-callsheet";
 
 const DEFAULT_FORMAT: ShotFormat = {
   fontSize: "14px",
@@ -101,11 +107,24 @@ const DEFAULT_FORMAT: ShotFormat = {
   backgroundColor: "transparent",
 };
 
+const DEFAULT_CALLSHEET: CallSheetData = {
+  projectName: "",
+  shootDate: "",
+  callTime: "",
+  location: "",
+  weather: "",
+  sunrise: "",
+  sunset: "",
+  selectedScenes: [],
+  selectedCrew: [],
+  notes: ""
+};
+
 export const FormBuilder = () => {
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
-  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail" | "characters" | "props" | "cues">("shot");
+  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail" | "characters" | "props" | "cues" | "checklist" | "crew" | "callsheet">("shot");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [shotDetails, setShotDetails] = useState<Record<string, DetailData>>({});
   const [shotFormats, setShotFormats] = useState<Record<string, ShotFormat>>({});
@@ -114,6 +133,9 @@ export const FormBuilder = () => {
   const [props, setProps] = useState<Prop[]>([]);
   const [cues, setCues] = useState<Cue[]>([]);
   const [showTimer, setShowTimer] = useState(false);
+  const [checklistCategories, setChecklistCategories] = useState<ChecklistCategory[]>([]);
+  const [crew, setCrew] = useState<CrewMember[]>([]);
+  const [callSheet, setCallSheet] = useState<CallSheetData>(DEFAULT_CALLSHEET);
 
   // Helper to get all shots from sequences
   const getAllShots = (): Shot[] => {
@@ -328,6 +350,91 @@ export const FormBuilder = () => {
     setCues(newCues);
   };
 
+  // Checklist handlers
+  const addChecklistCategory = () => {
+    const newCategory: ChecklistCategory = {
+      id: `category-${Date.now()}`,
+      name: "New Category",
+      items: []
+    };
+    setChecklistCategories(prev => [...prev, newCategory]);
+  };
+
+  const deleteChecklistCategory = (id: string) => {
+    setChecklistCategories(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateChecklistCategoryName = (id: string, name: string) => {
+    setChecklistCategories(prev => prev.map(c => 
+      c.id === id ? { ...c, name } : c
+    ));
+  };
+
+  const addChecklistItem = (categoryId: string) => {
+    const newItem: ChecklistItem = {
+      id: `item-${Date.now()}`,
+      text: "",
+      completed: false,
+      category: categoryId
+    };
+    setChecklistCategories(prev => prev.map(c => 
+      c.id === categoryId ? { ...c, items: [...c.items, newItem] } : c
+    ));
+  };
+
+  const deleteChecklistItem = (categoryId: string, itemId: string) => {
+    setChecklistCategories(prev => prev.map(c => 
+      c.id === categoryId ? { ...c, items: c.items.filter(i => i.id !== itemId) } : c
+    ));
+  };
+
+  const updateChecklistItem = (categoryId: string, itemId: string, text: string) => {
+    setChecklistCategories(prev => prev.map(c => 
+      c.id === categoryId ? { 
+        ...c, 
+        items: c.items.map(i => i.id === itemId ? { ...i, text } : i)
+      } : c
+    ));
+  };
+
+  const toggleChecklistItem = (categoryId: string, itemId: string) => {
+    setChecklistCategories(prev => prev.map(c => 
+      c.id === categoryId ? { 
+        ...c, 
+        items: c.items.map(i => i.id === itemId ? { ...i, completed: !i.completed } : i)
+      } : c
+    ));
+  };
+
+  // Crew handlers
+  const addCrew = () => {
+    const newCrew: CrewMember = {
+      id: `crew-${Date.now()}`,
+      name: "",
+      role: "",
+      department: "",
+      email: "",
+      phone: "",
+      notes: ""
+    };
+    setCrew(prev => [...prev, newCrew]);
+  };
+
+  const deleteCrew = (id: string) => {
+    setCrew(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateCrew = (id: string, field: keyof CrewMember, value: string) => {
+    setCrew(prev => prev.map(c => 
+      c.id === id ? { ...c, [field]: value } : c
+    ));
+  };
+
+  // Call sheet handler
+  const updateCallSheet = (field: keyof CallSheetData, value: any) => {
+    setCallSheet(prev => ({ ...prev, [field]: value }));
+  };
+
   // Migration: Load old data and convert to new structure
   useEffect(() => {
     const savedHierarchy = localStorage.getItem(HIERARCHY_STORAGE_KEY);
@@ -472,6 +579,33 @@ export const FormBuilder = () => {
         console.error("Failed to load cues data");
       }
     }
+
+    const savedChecklist = localStorage.getItem(CHECKLIST_STORAGE_KEY);
+    if (savedChecklist) {
+      try {
+        setChecklistCategories(JSON.parse(savedChecklist));
+      } catch (e) {
+        console.error("Failed to load checklist data");
+      }
+    }
+
+    const savedCrew = localStorage.getItem(CREW_STORAGE_KEY);
+    if (savedCrew) {
+      try {
+        setCrew(JSON.parse(savedCrew));
+      } catch (e) {
+        console.error("Failed to load crew data");
+      }
+    }
+
+    const savedCallSheet = localStorage.getItem(CALLSHEET_STORAGE_KEY);
+    if (savedCallSheet) {
+      try {
+        setCallSheet(JSON.parse(savedCallSheet));
+      } catch (e) {
+        console.error("Failed to load call sheet data");
+      }
+    }
   }, []);
 
   // Auto-save to localStorage
@@ -500,6 +634,18 @@ export const FormBuilder = () => {
   useEffect(() => {
     localStorage.setItem(CUES_STORAGE_KEY, JSON.stringify(cues));
   }, [cues]);
+
+  useEffect(() => {
+    localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(checklistCategories));
+  }, [checklistCategories]);
+
+  useEffect(() => {
+    localStorage.setItem(CREW_STORAGE_KEY, JSON.stringify(crew));
+  }, [crew]);
+
+  useEffect(() => {
+    localStorage.setItem(CALLSHEET_STORAGE_KEY, JSON.stringify(callSheet));
+  }, [callSheet]);
 
   const addSequence = () => {
     const newSequence: Sequence = {
@@ -886,36 +1032,48 @@ export const FormBuilder = () => {
           </div>
         )}
 
-        {/* Seven-Level View System */}
+        {/* Ten-Level View System */}
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 max-w-5xl">
-            <TabsTrigger value="production" className="gap-2">
-              <Layers className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-10 max-w-full text-xs">
+            <TabsTrigger value="production" className="gap-1">
+              <Layers className="h-3 w-3" />
               Production
             </TabsTrigger>
-            <TabsTrigger value="shot" className="gap-2">
-              <Layers className="h-4 w-4" />
+            <TabsTrigger value="shot" className="gap-1">
+              <Layers className="h-3 w-3" />
               Shots
             </TabsTrigger>
-            <TabsTrigger value="script" disabled={!selectedShotId} className="gap-2">
-              <Layers className="h-4 w-4" />
+            <TabsTrigger value="script" disabled={!selectedShotId} className="gap-1">
+              <Layers className="h-3 w-3" />
               Script
             </TabsTrigger>
-            <TabsTrigger value="detail" disabled={!selectedShotId} className="gap-2">
-              <Camera className="h-4 w-4" />
+            <TabsTrigger value="detail" disabled={!selectedShotId} className="gap-1">
+              <Camera className="h-3 w-3" />
               Detail
             </TabsTrigger>
-            <TabsTrigger value="characters" className="gap-2">
-              <User className="h-4 w-4" />
-              Characters
+            <TabsTrigger value="characters" className="gap-1">
+              <User className="h-3 w-3" />
+              Cast
             </TabsTrigger>
-            <TabsTrigger value="props" className="gap-2">
-              <Package className="h-4 w-4" />
+            <TabsTrigger value="props" className="gap-1">
+              <Package className="h-3 w-3" />
               Props
             </TabsTrigger>
-            <TabsTrigger value="cues" className="gap-2">
-              <Radio className="h-4 w-4" />
+            <TabsTrigger value="cues" className="gap-1">
+              <Radio className="h-3 w-3" />
               Cues
+            </TabsTrigger>
+            <TabsTrigger value="checklist" className="gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Checklist
+            </TabsTrigger>
+            <TabsTrigger value="crew" className="gap-1">
+              <Users className="h-3 w-3" />
+              Crew
+            </TabsTrigger>
+            <TabsTrigger value="callsheet" className="gap-1">
+              <FileText className="h-3 w-3" />
+              Call Sheet
             </TabsTrigger>
           </TabsList>
 
@@ -1004,6 +1162,37 @@ export const FormBuilder = () => {
               onDeleteCue={deleteCue}
               onUpdateCue={updateCue}
               onReorderCues={reorderCues}
+            />
+          </TabsContent>
+
+          <TabsContent value="checklist">
+            <ProductionChecklist
+              categories={checklistCategories}
+              onAddCategory={addChecklistCategory}
+              onDeleteCategory={deleteChecklistCategory}
+              onUpdateCategoryName={updateChecklistCategoryName}
+              onAddItem={addChecklistItem}
+              onDeleteItem={deleteChecklistItem}
+              onUpdateItem={updateChecklistItem}
+              onToggleItem={toggleChecklistItem}
+            />
+          </TabsContent>
+
+          <TabsContent value="crew">
+            <CrewContacts
+              crew={crew}
+              onAddCrew={addCrew}
+              onDeleteCrew={deleteCrew}
+              onUpdateCrew={updateCrew}
+            />
+          </TabsContent>
+
+          <TabsContent value="callsheet">
+            <CallSheet
+              sequences={sequences}
+              crew={crew}
+              callSheet={callSheet}
+              onUpdateCallSheet={updateCallSheet}
             />
           </TabsContent>
         </Tabs>
