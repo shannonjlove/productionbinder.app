@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Calendar, Clock, MapPin, Download, Users, Camera } from "lucide-react";
+import { Calendar, Clock, MapPin, Download, Users, Camera, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 import type { Sequence, Scene } from "./FormBuilder";
 import type { CrewMember } from "./CrewContacts";
 
@@ -67,95 +68,195 @@ export const CallSheet = ({
     onUpdateCallSheet("selectedCrew", newCrew);
   };
 
-  const exportCallSheet = () => {
+  const exportAsPDF = () => {
     const allScenes = getAllScenes();
     const selectedSceneData = allScenes.filter(s => callSheet.selectedScenes.includes(s.id));
     const selectedCrewData = crew.filter(c => callSheet.selectedCrew.includes(c.id));
 
-    let content = `
-═══════════════════════════════════════════════════════
-                    CALL SHEET
-═══════════════════════════════════════════════════════
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let y = 20;
 
-PROJECT: ${callSheet.projectName || "Untitled Project"}
-DATE: ${callSheet.shootDate || "TBD"}
-CALL TIME: ${callSheet.callTime || "TBD"}
-
-═══════════════════════════════════════════════════════
-                  LOCATION & WEATHER
-═══════════════════════════════════════════════════════
-
-Location: ${callSheet.location || "TBD"}
-Weather: ${callSheet.weather || "TBD"}
-Sunrise: ${callSheet.sunrise || "TBD"}
-Sunset: ${callSheet.sunset || "TBD"}
-
-═══════════════════════════════════════════════════════
-                  SCENES TO BE SHOT
-═══════════════════════════════════════════════════════
-
-`;
-
-    selectedSceneData.forEach((sceneData, index) => {
-      content += `${index + 1}. ${sceneData.sequenceName} - ${sceneData.name}\n`;
-      content += `   Shots: ${sceneData.scene.shots.length}\n`;
-      if (sceneData.scene.shots.length > 0) {
-        sceneData.scene.shots.forEach((shot, shotIndex) => {
-          content += `   ${shotIndex + 1}) ${shot.segment || "Untitled"}\n`;
-          if (shot.visual) content += `      Visual: ${shot.visual}\n`;
-        });
+    // Helper function to add new page if needed
+    const checkPageBreak = (neededHeight: number) => {
+      if (y + neededHeight > 270) {
+        doc.addPage();
+        y = 20;
       }
-      content += `\n`;
-    });
+    };
 
-    content += `
-═══════════════════════════════════════════════════════
-                    CREW CALL
-═══════════════════════════════════════════════════════
+    // Header
+    doc.setFillColor(30, 30, 30);
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("CALL SHEET", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    doc.text(callSheet.projectName || "Untitled Project", pageWidth / 2, 32, { align: "center" });
+    
+    y = 55;
+    doc.setTextColor(0, 0, 0);
 
-`;
+    // Date, Time, Location row
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, y, pageWidth - 2 * margin, 25, 'F');
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    const colWidth = (pageWidth - 2 * margin) / 3;
+    
+    doc.text("DATE", margin + 5, y + 8);
+    doc.text("CALL TIME", margin + colWidth + 5, y + 8);
+    doc.text("LOCATION", margin + colWidth * 2 + 5, y + 8);
+    
+    doc.setFont("helvetica", "normal");
+    doc.text(callSheet.shootDate || "TBD", margin + 5, y + 18);
+    doc.text(callSheet.callTime || "TBD", margin + colWidth + 5, y + 18);
+    doc.text(callSheet.location || "TBD", margin + colWidth * 2 + 5, y + 18);
+    
+    y += 35;
 
-    // Group crew by department
-    const crewByDept: Record<string, CrewMember[]> = {};
-    selectedCrewData.forEach(member => {
-      const dept = member.department || "Other";
-      if (!crewByDept[dept]) crewByDept[dept] = [];
-      crewByDept[dept].push(member);
-    });
+    // Weather info
+    doc.setFillColor(250, 250, 250);
+    doc.rect(margin, y, pageWidth - 2 * margin, 20, 'F');
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("WEATHER", margin + 5, y + 8);
+    doc.text("SUNRISE", margin + 60, y + 8);
+    doc.text("SUNSET", margin + 110, y + 8);
+    
+    doc.setFont("helvetica", "normal");
+    doc.text(callSheet.weather || "TBD", margin + 5, y + 16);
+    doc.text(callSheet.sunrise || "TBD", margin + 60, y + 16);
+    doc.text(callSheet.sunset || "TBD", margin + 110, y + 16);
+    
+    y += 30;
 
-    Object.entries(crewByDept).forEach(([dept, members]) => {
-      content += `${dept}:\n`;
-      members.forEach(member => {
-        content += `  • ${member.name} - ${member.role}\n`;
-        if (member.phone) content += `    Phone: ${member.phone}\n`;
-        if (member.email) content += `    Email: ${member.email}\n`;
+    // Scenes section
+    if (selectedSceneData.length > 0) {
+      checkPageBreak(40);
+      
+      doc.setFillColor(30, 30, 30);
+      doc.rect(margin, y, pageWidth - 2 * margin, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("SCENES TO BE SHOT", margin + 5, y + 7);
+      doc.setTextColor(0, 0, 0);
+      y += 15;
+
+      selectedSceneData.forEach((sceneData, index) => {
+        checkPageBreak(25);
+        
+        doc.setFillColor(index % 2 === 0 ? 250 : 255, index % 2 === 0 ? 250 : 255, index % 2 === 0 ? 250 : 255);
+        doc.rect(margin, y, pageWidth - 2 * margin, 20, 'F');
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${index + 1}. ${sceneData.sequenceName} - ${sceneData.name}`, margin + 5, y + 8);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(`${sceneData.scene.shots.length} shot${sceneData.scene.shots.length !== 1 ? 's' : ''}`, margin + 5, y + 16);
+        
+        y += 22;
       });
-      content += `\n`;
-    });
-
-    if (callSheet.notes) {
-      content += `
-═══════════════════════════════════════════════════════
-                      NOTES
-═══════════════════════════════════════════════════════
-
-${callSheet.notes}
-`;
+      
+      y += 10;
     }
 
-    content += `
-═══════════════════════════════════════════════════════
-               END OF CALL SHEET
-═══════════════════════════════════════════════════════
-`;
+    // Crew section
+    if (selectedCrewData.length > 0) {
+      checkPageBreak(40);
+      
+      doc.setFillColor(30, 30, 30);
+      doc.rect(margin, y, pageWidth - 2 * margin, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("CREW CALL", margin + 5, y + 7);
+      doc.setTextColor(0, 0, 0);
+      y += 15;
 
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `call-sheet-${callSheet.shootDate || "untitled"}.txt`;
-    a.click();
-    toast.success("Call sheet exported successfully");
+      // Group crew by department
+      const crewByDept: Record<string, CrewMember[]> = {};
+      selectedCrewData.forEach(member => {
+        const dept = member.department || "Other";
+        if (!crewByDept[dept]) crewByDept[dept] = [];
+        crewByDept[dept].push(member);
+      });
+
+      Object.entries(crewByDept).forEach(([dept, members]) => {
+        checkPageBreak(20);
+        
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margin, y, pageWidth - 2 * margin, 8, 'F');
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text(dept.toUpperCase(), margin + 5, y + 6);
+        y += 10;
+
+        members.forEach((member) => {
+          checkPageBreak(15);
+          
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${member.name}`, margin + 5, y + 5);
+          doc.setFont("helvetica", "normal");
+          doc.text(`${member.role}`, margin + 60, y + 5);
+          
+          if (member.phone || member.email) {
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            const contactInfo = [member.phone, member.email].filter(Boolean).join(" | ");
+            doc.text(contactInfo, margin + 5, y + 11);
+            doc.setTextColor(0, 0, 0);
+            y += 14;
+          } else {
+            y += 8;
+          }
+        });
+        
+        y += 5;
+      });
+    }
+
+    // Notes section
+    if (callSheet.notes) {
+      checkPageBreak(40);
+      
+      doc.setFillColor(30, 30, 30);
+      doc.rect(margin, y, pageWidth - 2 * margin, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("NOTES", margin + 5, y + 7);
+      doc.setTextColor(0, 0, 0);
+      y += 15;
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const splitNotes = doc.splitTextToSize(callSheet.notes, pageWidth - 2 * margin - 10);
+      doc.text(splitNotes, margin + 5, y);
+    }
+
+    // Footer on last page
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, 287, { align: "center" });
+      doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth - margin, 287, { align: "right" });
+    }
+
+    doc.save(`call-sheet-${callSheet.shootDate || "untitled"}.pdf`);
+    toast.success("PDF call sheet downloaded successfully");
   };
 
   const allScenes = getAllScenes();
@@ -171,9 +272,9 @@ ${callSheet.notes}
           <Button onClick={() => setPreviewMode(!previewMode)} variant="outline">
             {previewMode ? "Edit Mode" : "Preview Mode"}
           </Button>
-          <Button onClick={exportCallSheet} className="gap-2">
-            <Download className="h-4 w-4" />
-            Export Call Sheet
+          <Button onClick={exportAsPDF} className="gap-2">
+            <FileText className="h-4 w-4" />
+            Download PDF
           </Button>
         </div>
       </div>
