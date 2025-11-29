@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer, CheckCircle2, Users, FileText } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer, CheckCircle2, Users, FileText, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import { StudioTimer } from "./StudioTimer";
 import { ProductionChecklist, type ChecklistCategory, type ChecklistItem } from "./ProductionChecklist";
 import { CrewContacts, type CrewMember } from "./CrewContacts";
 import { CallSheet, type CallSheetData } from "./CallSheet";
+import { DigitalCallSheetForm, type DigitalCallSheetFormData, type FormResponse } from "./DigitalCallSheetForm";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -95,6 +96,8 @@ const CUES_STORAGE_KEY = "av-script-cues";
 const CHECKLIST_STORAGE_KEY = "av-script-checklist";
 const CREW_STORAGE_KEY = "av-script-crew";
 const CALLSHEET_STORAGE_KEY = "av-script-callsheet";
+const DIGITAL_FORMS_STORAGE_KEY = "av-script-digital-forms";
+const FORM_RESPONSES_STORAGE_KEY = "av-script-form-responses";
 
 const DEFAULT_FORMAT: ShotFormat = {
   fontSize: "14px",
@@ -124,7 +127,7 @@ export const FormBuilder = () => {
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [useAutoDuration, setUseAutoDuration] = useState(true);
-  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail" | "characters" | "props" | "cues" | "checklist" | "crew" | "callsheet">("shot");
+  const [currentView, setCurrentView] = useState<"production" | "shot" | "script" | "detail" | "characters" | "props" | "cues" | "checklist" | "crew" | "callsheet" | "digitalforms">("shot");
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [shotDetails, setShotDetails] = useState<Record<string, DetailData>>({});
   const [shotFormats, setShotFormats] = useState<Record<string, ShotFormat>>({});
@@ -136,6 +139,8 @@ export const FormBuilder = () => {
   const [checklistCategories, setChecklistCategories] = useState<ChecklistCategory[]>([]);
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [callSheet, setCallSheet] = useState<CallSheetData>(DEFAULT_CALLSHEET);
+  const [digitalForms, setDigitalForms] = useState<DigitalCallSheetFormData[]>([]);
+  const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
 
   // Helper to get all shots from sequences
   const getAllShots = (): Shot[] => {
@@ -435,6 +440,26 @@ export const FormBuilder = () => {
     setCallSheet(prev => ({ ...prev, [field]: value }));
   };
 
+  // Digital forms handlers
+  const saveDigitalForm = (form: DigitalCallSheetFormData) => {
+    setDigitalForms(prev => {
+      const existing = prev.findIndex(f => f.id === form.id);
+      if (existing >= 0) {
+        return prev.map(f => f.id === form.id ? form : f);
+      }
+      return [...prev, form];
+    });
+  };
+
+  const deleteDigitalForm = (formId: string) => {
+    setDigitalForms(prev => prev.filter(f => f.id !== formId));
+    setFormResponses(prev => prev.filter(r => r.formId !== formId));
+  };
+
+  const addFormResponse = (response: FormResponse) => {
+    setFormResponses(prev => [...prev, response]);
+  };
+
   // Migration: Load old data and convert to new structure
   useEffect(() => {
     const savedHierarchy = localStorage.getItem(HIERARCHY_STORAGE_KEY);
@@ -606,6 +631,24 @@ export const FormBuilder = () => {
         console.error("Failed to load call sheet data");
       }
     }
+
+    const savedDigitalForms = localStorage.getItem(DIGITAL_FORMS_STORAGE_KEY);
+    if (savedDigitalForms) {
+      try {
+        setDigitalForms(JSON.parse(savedDigitalForms));
+      } catch (e) {
+        console.error("Failed to load digital forms data");
+      }
+    }
+
+    const savedFormResponses = localStorage.getItem(FORM_RESPONSES_STORAGE_KEY);
+    if (savedFormResponses) {
+      try {
+        setFormResponses(JSON.parse(savedFormResponses));
+      } catch (e) {
+        console.error("Failed to load form responses data");
+      }
+    }
   }, []);
 
   // Auto-save to localStorage
@@ -646,6 +689,14 @@ export const FormBuilder = () => {
   useEffect(() => {
     localStorage.setItem(CALLSHEET_STORAGE_KEY, JSON.stringify(callSheet));
   }, [callSheet]);
+
+  useEffect(() => {
+    localStorage.setItem(DIGITAL_FORMS_STORAGE_KEY, JSON.stringify(digitalForms));
+  }, [digitalForms]);
+
+  useEffect(() => {
+    localStorage.setItem(FORM_RESPONSES_STORAGE_KEY, JSON.stringify(formResponses));
+  }, [formResponses]);
 
   const addSequence = () => {
     const newSequence: Sequence = {
@@ -1032,9 +1083,9 @@ export const FormBuilder = () => {
           </div>
         )}
 
-        {/* Ten-Level View System */}
+        {/* Eleven-Level View System */}
         <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 max-w-full text-xs">
+          <TabsList className="grid w-full grid-cols-11 max-w-full text-xs">
             <TabsTrigger value="production" className="gap-1">
               <Layers className="h-3 w-3" />
               Production
@@ -1074,6 +1125,10 @@ export const FormBuilder = () => {
             <TabsTrigger value="callsheet" className="gap-1">
               <FileText className="h-3 w-3" />
               Call Sheet
+            </TabsTrigger>
+            <TabsTrigger value="digitalforms" className="gap-1">
+              <ClipboardList className="h-3 w-3" />
+              Forms
             </TabsTrigger>
           </TabsList>
 
@@ -1193,6 +1248,16 @@ export const FormBuilder = () => {
               crew={crew}
               callSheet={callSheet}
               onUpdateCallSheet={updateCallSheet}
+            />
+          </TabsContent>
+
+          <TabsContent value="digitalforms">
+            <DigitalCallSheetForm
+              forms={digitalForms}
+              responses={formResponses}
+              onSaveForm={saveDigitalForm}
+              onDeleteForm={deleteDigitalForm}
+              onAddResponse={addFormResponse}
             />
           </TabsContent>
         </Tabs>
