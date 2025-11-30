@@ -2,7 +2,7 @@ import { useState } from "react";
 import { 
   Plus, Trash2, GripVertical, Copy, Eye, Send, FileText, CheckCircle, 
   Clock, MapPin, Cloud, Sun, Sunset, Users, Camera, Calendar,
-  Phone, Mail, Building, User, ChevronDown, ChevronUp, Download, Settings2
+  Phone, Mail, Building, User, ChevronDown, ChevronUp, Download, Settings2, EyeOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,9 @@ import { FieldRenderer } from "./form-builder/FieldRenderer";
 import { CallSheetSectionBuilder } from "./CallSheetSectionBuilder";
 import { CallSheetTemplates } from "./CallSheetTemplates";
 import { ProductionTypeSelector } from "./ProductionTypeSelector";
+import { CallSheetPreview } from "./CallSheetPreview";
+import { CrewImportDialog } from "./CrewImportDialog";
+import { CrewMember } from "./CrewContacts";
 
 // Types for the professional call sheet
 export interface CrewCall {
@@ -245,6 +248,7 @@ interface DigitalCallSheetFormProps {
   templates?: CallSheetTemplate[];
   onSaveTemplate?: (template: CallSheetTemplate) => void;
   onDeleteTemplate?: (templateId: string) => void;
+  crewContacts?: CrewMember[];
 }
 
 export const DigitalCallSheetForm = ({
@@ -257,10 +261,12 @@ export const DigitalCallSheetForm = ({
   templates = [],
   onSaveTemplate,
   onDeleteTemplate,
+  crewContacts = [],
 }: DigitalCallSheetFormProps) => {
   const [activeView, setActiveView] = useState<"list" | "builder" | "preview">("list");
   const [editingForm, setEditingForm] = useState<DigitalCallSheetFormData | null>(null);
   const [showSectionBuilder, setShowSectionBuilder] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     production: true,
@@ -456,6 +462,15 @@ export const DigitalCallSheetForm = ({
       onCustomSectionsChange(sections);
       toast.success("Template applied! Custom sections updated.");
     }
+  };
+
+  // Import crew from contacts
+  const handleImportCrew = (newCrewCalls: CrewCall[]) => {
+    if (!editingForm) return;
+    setEditingForm({
+      ...editingForm,
+      crewCalls: [...editingForm.crewCalls, ...newCrewCalls]
+    });
   };
 
   const saveCallSheet = () => {
@@ -845,7 +860,7 @@ export const DigitalCallSheetForm = ({
       <div className="space-y-4">
         <div className="flex items-center justify-between sticky top-0 bg-background z-10 pb-4">
           <div>
-            <Button variant="ghost" onClick={() => { setActiveView("list"); setEditingForm(null); }} className="mb-2">
+            <Button variant="ghost" onClick={() => { setActiveView("list"); setEditingForm(null); setShowPreview(false); }} className="mb-2">
               ← Back
             </Button>
             <h2 className="text-2xl font-bold text-foreground">
@@ -853,6 +868,14 @@ export const DigitalCallSheetForm = ({
             </h2>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant={showPreview ? "default" : "outline"} 
+              onClick={() => setShowPreview(!showPreview)} 
+              className="gap-2"
+            >
+              {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPreview ? "Edit" : "Preview"}
+            </Button>
             <Button variant="outline" onClick={() => exportToPDF(editingForm)} className="gap-2">
               <Download className="h-4 w-4" />
               PDF
@@ -864,6 +887,15 @@ export const DigitalCallSheetForm = ({
           </div>
         </div>
 
+        {/* Preview Mode */}
+        {showPreview ? (
+          <CallSheetPreview
+            form={editingForm}
+            customSections={customSections}
+            customFieldValues={customFieldValues}
+          />
+        ) : (
+        <>
         {/* Production Info */}
         <Collapsible open={expandedSections.production} onOpenChange={() => toggleSection("production")}>
           <Card>
@@ -1011,7 +1043,33 @@ export const DigitalCallSheetForm = ({
         {/* Crew */}
         <Collapsible open={expandedSections.crew} onOpenChange={() => toggleSection("crew")}>
           <Card>
-            <SectionHeader title="Crew Call" icon={Users} section="crew" onAdd={addCrewMember} />
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-t-lg transition-colors">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Crew Call</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {crewContacts.length > 0 && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <CrewImportDialog
+                      availableCrew={crewContacts}
+                      existingCrewIds={editingForm.crewCalls.map(c => c.name)}
+                      defaultCallTime={editingForm.crewCallTime}
+                      onImport={handleImportCrew}
+                    />
+                  </div>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => { e.stopPropagation(); addCrewMember(); }}
+                  className="gap-1"
+                >
+                  <Plus className="h-3 w-3" /> Add
+                </Button>
+                {expandedSections.crew ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="p-4 pt-0 space-y-2">
                 {editingForm.crewCalls.length === 0 ? (
@@ -1191,6 +1249,8 @@ export const DigitalCallSheetForm = ({
               </div>
             )}
           </Card>
+        )}
+        </>
         )}
       </div>
     );

@@ -1332,6 +1332,7 @@ export const FormBuilder = () => {
               templates={callSheetTemplates}
               onSaveTemplate={saveCallSheetTemplate}
               onDeleteTemplate={deleteCallSheetTemplate}
+              crewContacts={crew}
             />
           </TabsContent>
         </Tabs>
