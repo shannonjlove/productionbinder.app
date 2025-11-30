@@ -22,6 +22,7 @@ import { CustomSection, CallSheetTemplate } from "./form-builder/types";
 import { FieldRenderer } from "./form-builder/FieldRenderer";
 import { CallSheetSectionBuilder } from "./CallSheetSectionBuilder";
 import { CallSheetTemplates } from "./CallSheetTemplates";
+import { ProductionTypeSelector } from "./ProductionTypeSelector";
 
 // Types for the professional call sheet
 export interface CrewCall {
@@ -1166,12 +1167,18 @@ export const DigitalCallSheetForm = ({
             
             {showSectionBuilder && (
               <div className="mt-4 space-y-4">
+                {/* Production Type Templates */}
+                <ProductionTypeSelector
+                  onSelectTemplate={onCustomSectionsChange}
+                  currentSectionsCount={customSections.length}
+                />
+                
                 <CallSheetSectionBuilder
                   customSections={customSections}
                   onSectionsChange={onCustomSectionsChange}
                 />
                 
-                {/* Templates */}
+                {/* User Templates */}
                 {onSaveTemplate && onDeleteTemplate && (
                   <CallSheetTemplates
                     templates={templates}
