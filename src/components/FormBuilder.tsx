@@ -1312,6 +1312,8 @@ export const FormBuilder = () => {
               onSaveForm={saveDigitalForm}
               onDeleteForm={deleteDigitalForm}
               onAddResponse={addFormResponse}
+              customSections={callSheetCustomSections}
+              onCustomSectionsChange={setCallSheetCustomSections}
             />
           </TabsContent>
         </Tabs>
