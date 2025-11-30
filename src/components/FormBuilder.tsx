@@ -17,6 +17,7 @@ import { ProductionChecklist, type ChecklistCategory, type ChecklistItem } from 
 import { CrewContacts, type CrewMember } from "./CrewContacts";
 import { CallSheet, type CallSheetData } from "./CallSheet";
 import { DigitalCallSheetForm, type DigitalCallSheetFormData, type FormResponse } from "./DigitalCallSheetForm";
+import { CustomField, CustomSection, CallSheetTemplate } from "./form-builder/types";
 
 type PacingType = "slow" | "medium" | "fast";
 
@@ -98,6 +99,9 @@ const CREW_STORAGE_KEY = "av-script-crew";
 const CALLSHEET_STORAGE_KEY = "av-script-callsheet";
 const DIGITAL_FORMS_STORAGE_KEY = "av-script-digital-forms";
 const FORM_RESPONSES_STORAGE_KEY = "av-script-form-responses";
+const CREW_CUSTOM_FIELDS_KEY = "av-script-crew-custom-fields";
+const CALLSHEET_CUSTOM_SECTIONS_KEY = "av-script-callsheet-custom-sections";
+const CALLSHEET_TEMPLATES_KEY = "av-script-callsheet-templates";
 
 const DEFAULT_FORMAT: ShotFormat = {
   fontSize: "14px",
@@ -141,6 +145,9 @@ export const FormBuilder = () => {
   const [callSheet, setCallSheet] = useState<CallSheetData>(DEFAULT_CALLSHEET);
   const [digitalForms, setDigitalForms] = useState<DigitalCallSheetFormData[]>([]);
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
+  const [crewCustomFields, setCrewCustomFields] = useState<CustomField[]>([]);
+  const [callSheetCustomSections, setCallSheetCustomSections] = useState<CustomSection[]>([]);
+  const [callSheetTemplates, setCallSheetTemplates] = useState<CallSheetTemplate[]>([]);
 
   // Helper to get all shots from sequences
   const getAllShots = (): Shot[] => {
@@ -420,7 +427,8 @@ export const FormBuilder = () => {
       department: "",
       email: "",
       phone: "",
-      notes: ""
+      notes: "",
+      customFields: {}
     };
     setCrew(prev => [...prev, newCrew]);
   };
@@ -429,10 +437,14 @@ export const FormBuilder = () => {
     setCrew(prev => prev.filter(c => c.id !== id));
   };
 
-  const updateCrew = (id: string, field: keyof CrewMember, value: string) => {
+  const updateCrew = (id: string, field: keyof CrewMember | string, value: any) => {
     setCrew(prev => prev.map(c => 
       c.id === id ? { ...c, [field]: value } : c
     ));
+  };
+
+  const importCrew = (importedCrew: CrewMember[]) => {
+    setCrew(importedCrew);
   };
 
   // Call sheet handler
@@ -649,6 +661,33 @@ export const FormBuilder = () => {
         console.error("Failed to load form responses data");
       }
     }
+
+    const savedCrewCustomFields = localStorage.getItem(CREW_CUSTOM_FIELDS_KEY);
+    if (savedCrewCustomFields) {
+      try {
+        setCrewCustomFields(JSON.parse(savedCrewCustomFields));
+      } catch (e) {
+        console.error("Failed to load crew custom fields data");
+      }
+    }
+
+    const savedCallSheetCustomSections = localStorage.getItem(CALLSHEET_CUSTOM_SECTIONS_KEY);
+    if (savedCallSheetCustomSections) {
+      try {
+        setCallSheetCustomSections(JSON.parse(savedCallSheetCustomSections));
+      } catch (e) {
+        console.error("Failed to load call sheet custom sections data");
+      }
+    }
+
+    const savedCallSheetTemplates = localStorage.getItem(CALLSHEET_TEMPLATES_KEY);
+    if (savedCallSheetTemplates) {
+      try {
+        setCallSheetTemplates(JSON.parse(savedCallSheetTemplates));
+      } catch (e) {
+        console.error("Failed to load call sheet templates data");
+      }
+    }
   }, []);
 
   // Auto-save to localStorage
@@ -697,6 +736,18 @@ export const FormBuilder = () => {
   useEffect(() => {
     localStorage.setItem(FORM_RESPONSES_STORAGE_KEY, JSON.stringify(formResponses));
   }, [formResponses]);
+
+  useEffect(() => {
+    localStorage.setItem(CREW_CUSTOM_FIELDS_KEY, JSON.stringify(crewCustomFields));
+  }, [crewCustomFields]);
+
+  useEffect(() => {
+    localStorage.setItem(CALLSHEET_CUSTOM_SECTIONS_KEY, JSON.stringify(callSheetCustomSections));
+  }, [callSheetCustomSections]);
+
+  useEffect(() => {
+    localStorage.setItem(CALLSHEET_TEMPLATES_KEY, JSON.stringify(callSheetTemplates));
+  }, [callSheetTemplates]);
 
   const addSequence = () => {
     const newSequence: Sequence = {
@@ -1236,9 +1287,12 @@ export const FormBuilder = () => {
           <TabsContent value="crew">
             <CrewContacts
               crew={crew}
+              customFields={crewCustomFields}
               onAddCrew={addCrew}
               onDeleteCrew={deleteCrew}
               onUpdateCrew={updateCrew}
+              onCustomFieldsChange={setCrewCustomFields}
+              onImportCrew={importCrew}
             />
           </TabsContent>
 
