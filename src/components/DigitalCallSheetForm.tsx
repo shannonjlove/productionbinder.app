@@ -2,7 +2,7 @@ import { useState } from "react";
 import { 
   Plus, Trash2, GripVertical, Copy, Eye, Send, FileText, CheckCircle, 
   Clock, MapPin, Cloud, Sun, Sunset, Users, Camera, Calendar,
-  Phone, Mail, Building, User, ChevronDown, ChevronUp, Download
+  Phone, Mail, Building, User, ChevronDown, ChevronUp, Download, Settings2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import jsPDF from "jspdf";
+import { CustomSection } from "./form-builder/types";
+import { FieldRenderer } from "./form-builder/FieldRenderer";
+import { CallSheetSectionBuilder } from "./CallSheetSectionBuilder";
 
 // Types for the professional call sheet
 export interface CrewCall {
@@ -235,6 +238,8 @@ interface DigitalCallSheetFormProps {
   onSaveForm: (form: DigitalCallSheetFormData) => void;
   onDeleteForm: (formId: string) => void;
   onAddResponse: (response: FormResponse) => void;
+  customSections?: CustomSection[];
+  onCustomSectionsChange?: (sections: CustomSection[]) => void;
 }
 
 export const DigitalCallSheetForm = ({
@@ -242,9 +247,13 @@ export const DigitalCallSheetForm = ({
   responses,
   onSaveForm,
   onDeleteForm,
+  customSections = [],
+  onCustomSectionsChange,
 }: DigitalCallSheetFormProps) => {
   const [activeView, setActiveView] = useState<"list" | "builder" | "preview">("list");
   const [editingForm, setEditingForm] = useState<DigitalCallSheetFormData | null>(null);
+  const [showSectionBuilder, setShowSectionBuilder] = useState(false);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     production: true,
     weather: true,
@@ -252,7 +261,8 @@ export const DigitalCallSheetForm = ({
     schedule: true,
     crew: true,
     cast: true,
-    notes: true
+    notes: true,
+    customSections: true
   });
 
   const sensors = useSensors(
@@ -425,6 +435,11 @@ export const DigitalCallSheetForm = ({
     const oldIndex = editingForm.crewCalls.findIndex(c => c.id === active.id);
     const newIndex = editingForm.crewCalls.findIndex(c => c.id === over.id);
     setEditingForm({ ...editingForm, crewCalls: arrayMove(editingForm.crewCalls, oldIndex, newIndex) });
+  };
+
+  // Custom field value handler
+  const updateCustomFieldValue = (fieldId: string, value: any) => {
+    setCustomFieldValues(prev => ({ ...prev, [fieldId]: value }));
   };
 
   const saveCallSheet = () => {
@@ -645,6 +660,39 @@ export const DigitalCallSheetForm = ({
         const safetyLines = doc.splitTextToSize(form.safetyNotes, pageWidth - 2 * margin - 30);
         doc.text(safetyLines, margin + 25, y + 5);
       }
+    }
+
+    // Custom Sections
+    if (customSections.length > 0) {
+      customSections.forEach(section => {
+        const hasValues = section.fields.some(f => customFieldValues[f.id]);
+        if (!hasValues) return;
+
+        checkPageBreak(30);
+        doc.setFillColor(20, 40, 80);
+        doc.rect(margin, y, pageWidth - 2 * margin, 8, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${section.icon || ''} ${section.name}`.trim().toUpperCase(), margin + 5, y + 6);
+        doc.setTextColor(0, 0, 0);
+        y += 12;
+
+        section.fields.forEach(field => {
+          const value = customFieldValues[field.id];
+          if (!value) return;
+
+          checkPageBreak(12);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${field.label}:`, margin + 5, y + 5);
+          doc.setFont("helvetica", "normal");
+          const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+          doc.text(displayValue, margin + 40, y + 5);
+          y += 8;
+        });
+        y += 5;
+      });
     }
 
     // Footer
@@ -1047,6 +1095,70 @@ export const DigitalCallSheetForm = ({
             </CollapsibleContent>
           </Card>
         </Collapsible>
+
+        {/* Custom Sections */}
+        {customSections.length > 0 && (
+          <Collapsible open={expandedSections.customSections} onOpenChange={() => toggleSection("customSections")}>
+            <Card>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-t-lg transition-colors">
+                <div className="flex items-center gap-3">
+                  <Settings2 className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold text-foreground">Custom Sections</h3>
+                  <Badge variant="secondary" className="text-xs">{customSections.length} sections</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  {expandedSections.customSections ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="p-4 pt-0 space-y-6">
+                  {customSections.map(section => (
+                    <div key={section.id} className="space-y-3">
+                      <h4 className="font-medium text-foreground flex items-center gap-2">
+                        <span>{section.icon}</span>
+                        {section.name}
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {section.fields.map(field => (
+                          <FieldRenderer
+                            key={field.id}
+                            field={field}
+                            value={customFieldValues[field.id]}
+                            onChange={(value) => updateCustomFieldValue(field.id, value)}
+                          />
+                        ))}
+                      </div>
+                      <Separator />
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
+        {/* Section Builder Toggle */}
+        {onCustomSectionsChange && (
+          <Card className="p-4">
+            <Button 
+              variant={showSectionBuilder ? "default" : "outline"} 
+              onClick={() => setShowSectionBuilder(!showSectionBuilder)}
+              className="gap-2 w-full md:w-auto"
+            >
+              <Settings2 className="h-4 w-4" />
+              {showSectionBuilder ? "Hide Section Builder" : "Customize Sections"}
+            </Button>
+            
+            {showSectionBuilder && (
+              <div className="mt-4">
+                <CallSheetSectionBuilder
+                  customSections={customSections}
+                  onSectionsChange={onCustomSectionsChange}
+                />
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     );
   };
