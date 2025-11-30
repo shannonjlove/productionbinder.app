@@ -18,9 +18,10 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import jsPDF from "jspdf";
-import { CustomSection } from "./form-builder/types";
+import { CustomSection, CallSheetTemplate } from "./form-builder/types";
 import { FieldRenderer } from "./form-builder/FieldRenderer";
 import { CallSheetSectionBuilder } from "./CallSheetSectionBuilder";
+import { CallSheetTemplates } from "./CallSheetTemplates";
 
 // Types for the professional call sheet
 export interface CrewCall {
@@ -240,6 +241,9 @@ interface DigitalCallSheetFormProps {
   onAddResponse: (response: FormResponse) => void;
   customSections?: CustomSection[];
   onCustomSectionsChange?: (sections: CustomSection[]) => void;
+  templates?: CallSheetTemplate[];
+  onSaveTemplate?: (template: CallSheetTemplate) => void;
+  onDeleteTemplate?: (templateId: string) => void;
 }
 
 export const DigitalCallSheetForm = ({
@@ -249,6 +253,9 @@ export const DigitalCallSheetForm = ({
   onDeleteForm,
   customSections = [],
   onCustomSectionsChange,
+  templates = [],
+  onSaveTemplate,
+  onDeleteTemplate,
 }: DigitalCallSheetFormProps) => {
   const [activeView, setActiveView] = useState<"list" | "builder" | "preview">("list");
   const [editingForm, setEditingForm] = useState<DigitalCallSheetFormData | null>(null);
@@ -440,6 +447,14 @@ export const DigitalCallSheetForm = ({
   // Custom field value handler
   const updateCustomFieldValue = (fieldId: string, value: any) => {
     setCustomFieldValues(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  // Apply template handler
+  const handleApplyTemplate = (sections: CustomSection[]) => {
+    if (onCustomSectionsChange) {
+      onCustomSectionsChange(sections);
+      toast.success("Template applied! Custom sections updated.");
+    }
   };
 
   const saveCallSheet = () => {
@@ -1139,7 +1154,7 @@ export const DigitalCallSheetForm = ({
 
         {/* Section Builder Toggle */}
         {onCustomSectionsChange && (
-          <Card className="p-4">
+          <Card className="p-4 space-y-4">
             <Button 
               variant={showSectionBuilder ? "default" : "outline"} 
               onClick={() => setShowSectionBuilder(!showSectionBuilder)}
@@ -1150,11 +1165,22 @@ export const DigitalCallSheetForm = ({
             </Button>
             
             {showSectionBuilder && (
-              <div className="mt-4">
+              <div className="mt-4 space-y-4">
                 <CallSheetSectionBuilder
                   customSections={customSections}
                   onSectionsChange={onCustomSectionsChange}
                 />
+                
+                {/* Templates */}
+                {onSaveTemplate && onDeleteTemplate && (
+                  <CallSheetTemplates
+                    templates={templates}
+                    currentSections={customSections}
+                    onSaveTemplate={onSaveTemplate}
+                    onDeleteTemplate={onDeleteTemplate}
+                    onApplyTemplate={handleApplyTemplate}
+                  />
+                )}
               </div>
             )}
           </Card>

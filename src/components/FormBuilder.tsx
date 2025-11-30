@@ -472,6 +472,21 @@ export const FormBuilder = () => {
     setFormResponses(prev => [...prev, response]);
   };
 
+  // Call sheet template handlers
+  const saveCallSheetTemplate = (template: CallSheetTemplate) => {
+    setCallSheetTemplates(prev => {
+      const existing = prev.findIndex(t => t.id === template.id);
+      if (existing >= 0) {
+        return prev.map(t => t.id === template.id ? template : t);
+      }
+      return [...prev, template];
+    });
+  };
+
+  const deleteCallSheetTemplate = (templateId: string) => {
+    setCallSheetTemplates(prev => prev.filter(t => t.id !== templateId));
+  };
+
   // Migration: Load old data and convert to new structure
   useEffect(() => {
     const savedHierarchy = localStorage.getItem(HIERARCHY_STORAGE_KEY);
@@ -1314,6 +1329,9 @@ export const FormBuilder = () => {
               onAddResponse={addFormResponse}
               customSections={callSheetCustomSections}
               onCustomSectionsChange={setCallSheetCustomSections}
+              templates={callSheetTemplates}
+              onSaveTemplate={saveCallSheetTemplate}
+              onDeleteTemplate={deleteCallSheetTemplate}
             />
           </TabsContent>
         </Tabs>
