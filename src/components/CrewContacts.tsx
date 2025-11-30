@@ -1,9 +1,15 @@
-import { Plus, Trash2, Mail, Phone, User } from "lucide-react";
+import { Plus, Trash2, Mail, Phone, User, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
+import { CustomField } from "./form-builder/types";
+import { FieldRenderer } from "./form-builder/FieldRenderer";
+import { CrewFieldBuilder } from "./CrewFieldBuilder";
+import { CrewImportExport } from "./CrewImportExport";
 
 export interface CrewMember {
   id: string;
@@ -13,13 +19,17 @@ export interface CrewMember {
   email: string;
   phone: string;
   notes: string;
+  customFields?: Record<string, any>;
 }
 
 interface CrewContactsProps {
   crew: CrewMember[];
+  customFields: CustomField[];
   onAddCrew: () => void;
   onDeleteCrew: (id: string) => void;
-  onUpdateCrew: (id: string, field: keyof CrewMember, value: string) => void;
+  onUpdateCrew: (id: string, field: keyof CrewMember | string, value: any) => void;
+  onCustomFieldsChange: (fields: CustomField[]) => void;
+  onImportCrew: (crew: CrewMember[]) => void;
 }
 
 const departments = [
@@ -38,10 +48,26 @@ const departments = [
 
 export const CrewContacts = ({
   crew,
+  customFields,
   onAddCrew,
   onDeleteCrew,
   onUpdateCrew,
+  onCustomFieldsChange,
+  onImportCrew,
 }: CrewContactsProps) => {
+  const [showFieldBuilder, setShowFieldBuilder] = useState(false);
+
+  const handleCustomFieldChange = (memberId: string, fieldId: string, value: any) => {
+    const member = crew.find(c => c.id === memberId);
+    if (!member) return;
+    
+    const updatedCustomFields = {
+      ...(member.customFields || {}),
+      [fieldId]: value
+    };
+    onUpdateCrew(memberId, 'customFields', updatedCustomFields);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -49,11 +75,38 @@ export const CrewContacts = ({
           <h2 className="text-2xl font-bold text-foreground mb-2">Crew Contacts</h2>
           <p className="text-muted-foreground">Manage contact information for all crew members</p>
         </div>
-        <Button onClick={onAddCrew} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Crew Member
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowFieldBuilder(!showFieldBuilder)}
+            className="gap-2"
+          >
+            <Settings2 className="h-4 w-4" />
+            {showFieldBuilder ? 'Hide' : 'Customize Fields'}
+          </Button>
+          <Button onClick={onAddCrew} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Crew Member
+          </Button>
+        </div>
       </div>
+
+      <Collapsible open={showFieldBuilder} onOpenChange={setShowFieldBuilder}>
+        <CollapsibleContent className="space-y-4 pb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CrewFieldBuilder
+              customFields={customFields}
+              onFieldsChange={onCustomFieldsChange}
+            />
+            <CrewImportExport
+              crew={crew}
+              customFields={customFields}
+              onImportCrew={onImportCrew}
+              onImportFields={onCustomFieldsChange}
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {crew.map((member) => (
@@ -164,6 +217,25 @@ export const CrewContacts = ({
                     placeholder="Additional information"
                   />
                 </div>
+
+                {/* Custom Fields */}
+                {customFields.length > 0 && (
+                  <div className="border-t pt-4 mt-4 space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Custom Fields
+                    </p>
+                    {customFields
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .map((field) => (
+                        <FieldRenderer
+                          key={field.id}
+                          field={field}
+                          value={member.customFields?.[field.id]}
+                          onChange={(value) => handleCustomFieldChange(member.id, field.id, value)}
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           </Card>
