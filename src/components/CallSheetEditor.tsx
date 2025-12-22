@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Send, Clock, Users, FileText, MapPin, UserCheck } from "lucide-react";
+import { ArrowLeft, Save, Send, Clock, Users, FileText, MapPin, UserCheck, Bell } from "lucide-react";
 import { CrewCheckIn } from "@/components/CrewCheckIn";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { NotificationToggle } from "@/components/NotificationBanner";
 interface ShootDay {
   id: string;
   day_number: number;
@@ -73,6 +75,8 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
   const [callSheetScenes, setCallSheetScenes] = useState<CallSheetScene[]>([]);
   const [callSheetCast, setCallSheetCast] = useState<CallSheetCast[]>([]);
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
+  const { showLocalNotification, isSubscribed } = usePushNotifications();
 
   useEffect(() => {
     fetchData();
@@ -194,20 +198,46 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
   };
 
   const publishCallSheet = async () => {
-    const { error } = await supabase
-      .from("call_sheets")
-      .update({
-        status: "published",
-        published_at: new Date().toISOString()
-      })
-      .eq("id", callSheet.id);
+    setPublishing(true);
+    
+    try {
+      // Fetch production name for notification
+      const { data: production } = await supabase
+        .from("productions")
+        .select("name")
+        .eq("id", productionId)
+        .single();
 
-    if (error) {
-      toast.error("Failed to publish");
-      console.error(error);
-    } else {
+      const { error } = await supabase
+        .from("call_sheets")
+        .update({
+          status: "published",
+          published_at: new Date().toISOString()
+        })
+        .eq("id", callSheet.id);
+
+      if (error) {
+        toast.error("Failed to publish");
+        console.error(error);
+        return;
+      }
+
       setCallSheet(prev => ({ ...prev, status: "published" }));
       toast.success("Call sheet published!");
+
+      // Send push notification
+      if (isSubscribed) {
+        await showLocalNotification(
+          `Call Sheet Published: Day ${shootDay.day_number}`,
+          {
+            body: `${production?.name || 'Production'} - ${shootDay.shoot_date}\nGeneral Call: ${callSheet.general_crew_call || 'TBD'}`,
+            tag: `call-sheet-${callSheet.id}`,
+            data: { url: window.location.href, callSheetId: callSheet.id }
+          }
+        );
+      }
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -235,14 +265,19 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
             <p className="text-sm text-slate-400">{shootDay.shoot_date}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <NotificationToggle />
           <Button onClick={saveCallSheet} className="bg-slate-700 hover:bg-slate-600">
             <Save className="w-4 h-4 mr-2" />
             Save
           </Button>
-          <Button onClick={publishCallSheet} className="bg-amber-600 hover:bg-amber-700">
-            <Send className="w-4 h-4 mr-2" />
-            Publish
+          <Button onClick={publishCallSheet} disabled={publishing} className="bg-amber-600 hover:bg-amber-700">
+            {publishing ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            {publishing ? "Publishing..." : "Publish"}
           </Button>
         </div>
       </div>
