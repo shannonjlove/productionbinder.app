@@ -259,6 +259,48 @@ export type Database = {
           },
         ]
       }
+      crew_check_ins: {
+        Row: {
+          call_sheet_id: string
+          checked_in_at: string
+          crew_member_id: string
+          id: string
+          location: string | null
+          notes: string | null
+        }
+        Insert: {
+          call_sheet_id: string
+          checked_in_at?: string
+          crew_member_id: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+        }
+        Update: {
+          call_sheet_id?: string
+          checked_in_at?: string
+          crew_member_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_check_ins_call_sheet_id_fkey"
+            columns: ["call_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "call_sheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_check_ins_crew_member_id_fkey"
+            columns: ["crew_member_id"]
+            isOneToOne: false
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_members: {
         Row: {
           created_at: string
