@@ -8,14 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video } from "lucide-react";
+import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video, BookOpen } from "lucide-react";
 import { CastManager } from "./CastManager";
 import { CrewManager } from "./CrewManager";
 import { SceneManager } from "./SceneManager";
 import { ShootDayManager } from "./ShootDayManager";
 import { CallSheetManager } from "./CallSheetManager";
 import { DayOutOfDays } from "./DayOutOfDays";
-import { FormBuilder } from "./FormBuilder";
+import { AVScriptManager } from "./AVScriptManager";
+import { ScreenplayEditor } from "./ScreenplayEditor";
 
 interface Production {
   id: string;
@@ -253,6 +254,10 @@ export function ProductionDashboard() {
                   <Video className="w-4 h-4 mr-2" />
                   A/V Script
                 </TabsTrigger>
+                <TabsTrigger value="screenplay" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Screenplay
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="cast">
@@ -274,7 +279,10 @@ export function ProductionDashboard() {
                 <DayOutOfDays productionId={selectedProduction.id} />
               </TabsContent>
               <TabsContent value="avscript">
-                <FormBuilder />
+                <AVScriptManager productionId={selectedProduction.id} />
+              </TabsContent>
+              <TabsContent value="screenplay">
+                <ScreenplayEditor productionId={selectedProduction.id} />
               </TabsContent>
             </Tabs>
           ) : (
