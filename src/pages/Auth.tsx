@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Film, Clapperboard } from "lucide-react";
+import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -91,17 +92,17 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMjIiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoNnYtNmgtNnptMCAwdi02aC02djZoNnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <AnimatedGradientBackground />
       
-      <Card className="w-full max-w-md relative z-10 bg-slate-800/80 backdrop-blur-xl border-slate-700 shadow-2xl">
+      <Card className="w-full max-w-md relative z-10 bg-white/80 backdrop-blur-xl border-slate-200 shadow-2xl">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/25">
             <Clapperboard className="w-8 h-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-white">Production Hub</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-2xl font-bold text-slate-900">Production Hub</CardTitle>
+            <CardDescription className="text-slate-600">
               Call sheets, crew management & production tools
             </CardDescription>
           </div>
@@ -109,7 +110,7 @@ export default function Auth() {
         
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-slate-700/50">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-100">
               <TabsTrigger value="login" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                 Sign In
               </TabsTrigger>
@@ -121,25 +122,25 @@ export default function Auth() {
             <TabsContent value="login" className="space-y-4 mt-6">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email" className="text-slate-300">Email</Label>
+                  <Label htmlFor="login-email" className="text-slate-700">Email</Label>
                   <Input
                     id="login-email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password" className="text-slate-300">Password</Label>
+                  <Label htmlFor="login-password" className="text-slate-700">Password</Label>
                   <Input
                     id="login-password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
                 <Button 
@@ -155,36 +156,36 @@ export default function Auth() {
             <TabsContent value="signup" className="space-y-4 mt-6">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name" className="text-slate-300">Full Name</Label>
+                  <Label htmlFor="signup-name" className="text-slate-700">Full Name</Label>
                   <Input
                     id="signup-name"
                     type="text"
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-slate-300">Email</Label>
+                  <Label htmlFor="signup-email" className="text-slate-700">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-slate-300">Password</Label>
+                  <Label htmlFor="signup-password" className="text-slate-700">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                    className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
                 <Button 
