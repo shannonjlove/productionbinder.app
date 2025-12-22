@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer, CheckCircle2, Users, FileText, ClipboardList } from "lucide-react";
+import { Plus, Download, Save, Clock, Gauge, Layers, Camera, Palette, User, Package, Radio, Timer, CheckCircle2, Users, FileText, ClipboardList, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 import { ProductionView } from "./ProductionView";
 import { ShotList } from "./ShotList";
 import { ScriptEditor } from "./ScriptEditor";
@@ -1034,6 +1035,124 @@ export const FormBuilder = () => {
     toast.success("Markdown exported successfully");
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - margin * 2;
+    let yPos = margin;
+    
+    const addNewPageIfNeeded = (requiredSpace: number) => {
+      if (yPos + requiredSpace > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin;
+        return true;
+      }
+      return false;
+    };
+
+    // Title
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("AV Script", margin, yPos);
+    yPos += 12;
+
+    // Stats
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total Words: ${getTotalWordCount()}  |  Total Time: ${getTotalRunningTime()}  |  Pacing: ${pacing}`, margin, yPos);
+    yPos += 10;
+
+    // Divider
+    doc.setDrawColor(200);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 10;
+
+    sequences.forEach((seq, seqIndex) => {
+      addNewPageIfNeeded(25);
+      
+      // Sequence header
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(`${seqIndex + 1}. ${seq.name}`, margin, yPos);
+      yPos += 10;
+
+      seq.scenes.forEach((scene, sceneIndex) => {
+        addNewPageIfNeeded(20);
+        
+        // Scene header
+        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(60, 60, 60);
+        doc.text(`${seqIndex + 1}.${sceneIndex + 1} ${scene.name}`, margin + 5, yPos);
+        yPos += 8;
+
+        scene.shots.forEach((shot, shotIndex) => {
+          addNewPageIfNeeded(40);
+          
+          const wordCount = countWords(shot.audio);
+          const duration = useAutoDuration 
+            ? calculateDurationFromWords(wordCount)
+            : shot.duration;
+
+          // Shot box
+          doc.setDrawColor(220);
+          doc.setFillColor(250, 250, 250);
+          doc.roundedRect(margin, yPos, contentWidth, 35, 2, 2, "FD");
+          
+          // Shot number
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(100, 100, 100);
+          doc.text(`Shot ${seqIndex + 1}.${sceneIndex + 1}.${shotIndex + 1}`, margin + 3, yPos + 5);
+          
+          // Duration badge
+          doc.setFillColor(59, 130, 246);
+          doc.roundedRect(pageWidth - margin - 25, yPos + 2, 22, 6, 1, 1, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(7);
+          doc.text(duration, pageWidth - margin - 24, yPos + 6);
+
+          // Visual section
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(100, 100, 100);
+          doc.text("VISUAL:", margin + 3, yPos + 12);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(40, 40, 40);
+          const visualLines = doc.splitTextToSize(shot.visual || "-", contentWidth / 2 - 10);
+          doc.text(visualLines.slice(0, 2), margin + 3, yPos + 17);
+
+          // Audio section
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(100, 100, 100);
+          doc.text("AUDIO:", margin + contentWidth / 2, yPos + 12);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(40, 40, 40);
+          const audioLines = doc.splitTextToSize(shot.audio || "-", contentWidth / 2 - 10);
+          doc.text(audioLines.slice(0, 2), margin + contentWidth / 2, yPos + 17);
+
+          // Word count
+          doc.setFontSize(7);
+          doc.setTextColor(120, 120, 120);
+          doc.text(`${wordCount} words`, margin + 3, yPos + 32);
+
+          yPos += 40;
+        });
+        
+        yPos += 5;
+      });
+      
+      yPos += 8;
+    });
+
+    doc.save(`av-script-${new Date().toISOString().split("T")[0]}.pdf`);
+    toast.success("PDF exported successfully");
+  };
+
   const saveManually = () => {
     localStorage.setItem(HIERARCHY_STORAGE_KEY, JSON.stringify(sequences));
     toast.success("Saved successfully");
@@ -1075,6 +1194,10 @@ export const FormBuilder = () => {
             <Button onClick={exportToMarkdown} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export Markdown
+            </Button>
+            <Button onClick={exportToPDF} variant="outline" className="gap-2">
+              <FileDown className="h-4 w-4" />
+              Export PDF
             </Button>
             <Button 
               onClick={() => {

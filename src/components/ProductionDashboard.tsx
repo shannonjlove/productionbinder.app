@@ -15,7 +15,7 @@ import { SceneManager } from "./SceneManager";
 import { ShootDayManager } from "./ShootDayManager";
 import { CallSheetManager } from "./CallSheetManager";
 import { DayOutOfDays } from "./DayOutOfDays";
-import { AVScriptBuilder } from "./AVScriptBuilder";
+import { FormBuilder } from "./FormBuilder";
 
 interface Production {
   id: string;
@@ -274,7 +274,7 @@ export function ProductionDashboard() {
                 <DayOutOfDays productionId={selectedProduction.id} />
               </TabsContent>
               <TabsContent value="avscript">
-                <AVScriptBuilder productionId={selectedProduction.id} />
+                <FormBuilder />
               </TabsContent>
             </Tabs>
           ) : (
