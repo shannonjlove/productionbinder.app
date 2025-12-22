@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
-import { Calendar, User, Grid3X3, Filter } from "lucide-react";
+import { Grid3X3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DigitalCallSheetFormData, CastMember, CrewCall } from "./DigitalCallSheetForm";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DayOutOfDaysProps {
-  callSheets: DigitalCallSheetFormData[];
+  productionId: string;
 }
 
 type StatusCode = "W" | "H" | "T" | "SW" | "SWF" | "WF" | "-";
@@ -26,8 +27,6 @@ interface PersonSchedule {
   character?: string;
   days: DayStatus[];
   totalWork: number;
-  totalHold: number;
-  totalTravel: number;
 }
 
 const STATUS_COLORS: Record<StatusCode, string> = {
@@ -50,118 +49,153 @@ const STATUS_LABELS: Record<StatusCode, string> = {
   "-": "Off"
 };
 
-export const DayOutOfDays = ({ callSheets }: DayOutOfDaysProps) => {
+export const DayOutOfDays = ({ productionId }: DayOutOfDaysProps) => {
   const [filterType, setFilterType] = useState<"all" | "cast" | "crew">("all");
   const [filterDepartment, setFilterDepartment] = useState<string>("all");
 
+  // Fetch shoot days
+  const { data: shootDays = [] } = useQuery({
+    queryKey: ["shoot-days", productionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shoot_days")
+        .select("*")
+        .eq("production_id", productionId)
+        .order("shoot_date");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch call sheets with cast and crew
+  const { data: callSheets = [] } = useQuery({
+    queryKey: ["call-sheets-dood", productionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("call_sheets")
+        .select(`
+          *,
+          shoot_days!inner(*),
+          call_sheet_cast(*, cast_members(*)),
+          call_sheet_crew(*, crew_members(*))
+        `)
+        .eq("production_id", productionId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch all cast and crew members
+  const { data: castMembers = [] } = useQuery({
+    queryKey: ["cast-members", productionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cast_members")
+        .select("*")
+        .eq("production_id", productionId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: crewMembers = [] } = useQuery({
+    queryKey: ["crew-members", productionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crew_members")
+        .select("*")
+        .eq("production_id", productionId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Get all unique dates sorted
   const allDates = useMemo(() => {
-    const dates = new Set<string>();
-    callSheets.forEach(cs => {
-      if (cs.shootDate) dates.add(cs.shootDate);
-    });
-    return Array.from(dates).sort();
-  }, [callSheets]);
+    return shootDays.map(sd => sd.shoot_date).sort();
+  }, [shootDays]);
 
   // Get all unique departments
   const allDepartments = useMemo(() => {
     const depts = new Set<string>();
-    callSheets.forEach(cs => {
-      cs.crewCalls.forEach(c => {
-        if (c.department) depts.add(c.department);
-      });
+    crewMembers.forEach(c => {
+      if (c.department) depts.add(c.department);
     });
     return Array.from(depts).sort();
-  }, [callSheets]);
+  }, [crewMembers]);
 
   // Build person schedules
   const personSchedules = useMemo(() => {
-    const peopleMap = new Map<string, PersonSchedule>();
+    const schedules: PersonSchedule[] = [];
 
-    // Process all call sheets
-    callSheets.forEach((cs, csIndex) => {
-      const date = cs.shootDate;
-      const isFirst = csIndex === 0;
-      const isLast = csIndex === callSheets.length - 1;
+    // Process cast members
+    castMembers.forEach(cast => {
+      const workDates = callSheets
+        .filter(cs => cs.call_sheet_cast?.some((csc: { cast_member_id: string }) => csc.cast_member_id === cast.id))
+        .map(cs => cs.shoot_days?.shoot_date)
+        .filter(Boolean)
+        .sort();
 
-      // Process cast
-      cs.castMembers.forEach(cast => {
-        const key = `cast-${cast.name.toLowerCase().trim()}`;
-        if (!peopleMap.has(key)) {
-          peopleMap.set(key, {
-            id: key,
-            name: cast.name,
-            role: cast.character || "Cast",
-            type: "cast",
-            character: cast.character,
-            days: allDates.map(d => ({ date: d, status: "-" as StatusCode })),
-            totalWork: 0,
-            totalHold: 0,
-            totalTravel: 0
-          });
-        }
-
-        const person = peopleMap.get(key)!;
-        const dayIndex = allDates.indexOf(date);
-        if (dayIndex >= 0) {
-          // Determine status
-          const personDays = callSheets.filter(c => 
-            c.castMembers.some(m => m.name.toLowerCase().trim() === cast.name.toLowerCase().trim())
-          ).map(c => c.shootDate).sort();
-
-          const isPersonFirst = personDays[0] === date;
-          const isPersonLast = personDays[personDays.length - 1] === date;
-
-          let status: StatusCode = "W";
-          if (isPersonFirst && isPersonLast) status = "SWF";
-          else if (isPersonFirst) status = "SW";
-          else if (isPersonLast) status = "WF";
-
-          person.days[dayIndex] = { date, status };
-          person.totalWork++;
-        }
+      const days: DayStatus[] = allDates.map(date => {
+        if (!workDates.includes(date)) return { date, status: "-" as StatusCode };
+        
+        const isFirst = workDates[0] === date;
+        const isLast = workDates[workDates.length - 1] === date;
+        
+        let status: StatusCode = "W";
+        if (isFirst && isLast) status = "SWF";
+        else if (isFirst) status = "SW";
+        else if (isLast) status = "WF";
+        
+        return { date, status };
       });
 
-      // Process crew
-      cs.crewCalls.forEach(crew => {
-        const key = `crew-${crew.name.toLowerCase().trim()}`;
-        if (!peopleMap.has(key)) {
-          peopleMap.set(key, {
-            id: key,
-            name: crew.name,
-            role: crew.role,
-            type: "crew",
-            department: crew.department,
-            days: allDates.map(d => ({ date: d, status: "-" as StatusCode })),
-            totalWork: 0,
-            totalHold: 0,
-            totalTravel: 0
-          });
-        }
-
-        const person = peopleMap.get(key)!;
-        const dayIndex = allDates.indexOf(date);
-        if (dayIndex >= 0) {
-          const personDays = callSheets.filter(c => 
-            c.crewCalls.some(m => m.name.toLowerCase().trim() === crew.name.toLowerCase().trim())
-          ).map(c => c.shootDate).sort();
-
-          const isPersonFirst = personDays[0] === date;
-          const isPersonLast = personDays[personDays.length - 1] === date;
-
-          let status: StatusCode = "W";
-          if (isPersonFirst && isPersonLast) status = "SWF";
-          else if (isPersonFirst) status = "SW";
-          else if (isPersonLast) status = "WF";
-
-          person.days[dayIndex] = { date, status };
-          person.totalWork++;
-        }
+      schedules.push({
+        id: `cast-${cast.id}`,
+        name: cast.actor_name || cast.character_name,
+        role: cast.character_name,
+        type: "cast",
+        character: cast.character_name,
+        days,
+        totalWork: workDates.length,
       });
     });
 
-    return Array.from(peopleMap.values());
-  }, [callSheets, allDates]);
+    // Process crew members
+    crewMembers.forEach(crew => {
+      const workDates = callSheets
+        .filter(cs => cs.call_sheet_crew?.some((csc: { crew_member_id: string }) => csc.crew_member_id === crew.id))
+        .map(cs => cs.shoot_days?.shoot_date)
+        .filter(Boolean)
+        .sort();
+
+      const days: DayStatus[] = allDates.map(date => {
+        if (!workDates.includes(date)) return { date, status: "-" as StatusCode };
+        
+        const isFirst = workDates[0] === date;
+        const isLast = workDates[workDates.length - 1] === date;
+        
+        let status: StatusCode = "W";
+        if (isFirst && isLast) status = "SWF";
+        else if (isFirst) status = "SW";
+        else if (isLast) status = "WF";
+        
+        return { date, status };
+      });
+
+      schedules.push({
+        id: `crew-${crew.id}`,
+        name: crew.name,
+        role: crew.job_title,
+        type: "crew",
+        department: crew.department,
+        days,
+        totalWork: workDates.length,
+      });
+    });
+
+    return schedules;
+  }, [castMembers, crewMembers, callSheets, allDates]);
 
   // Filter schedules
   const filteredSchedules = useMemo(() => {
@@ -172,24 +206,19 @@ export const DayOutOfDays = ({ callSheets }: DayOutOfDaysProps) => {
     });
   }, [personSchedules, filterType, filterDepartment]);
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-  };
-
   const formatDateShort = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
   };
 
-  if (callSheets.length === 0) {
+  if (shootDays.length === 0) {
     return (
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Grid3X3 className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Call Sheets Yet</h3>
+          <h3 className="text-lg font-medium mb-2">No Shoot Days Yet</h3>
           <p className="text-muted-foreground text-center">
-            Create call sheets to generate the Day Out of Days report.
+            Create shoot days and call sheets to generate the Day Out of Days report.
           </p>
         </CardContent>
       </Card>
