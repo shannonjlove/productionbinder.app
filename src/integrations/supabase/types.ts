@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      av_script_entries: {
+        Row: {
+          audio: string | null
+          created_at: string
+          duration: string | null
+          id: string
+          notes: string | null
+          script_id: string
+          segment: string | null
+          sort_order: number
+          updated_at: string
+          visual: string | null
+        }
+        Insert: {
+          audio?: string | null
+          created_at?: string
+          duration?: string | null
+          id?: string
+          notes?: string | null
+          script_id: string
+          segment?: string | null
+          sort_order?: number
+          updated_at?: string
+          visual?: string | null
+        }
+        Update: {
+          audio?: string | null
+          created_at?: string
+          duration?: string | null
+          id?: string
+          notes?: string | null
+          script_id?: string
+          segment?: string | null
+          sort_order?: number
+          updated_at?: string
+          visual?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "av_script_entries_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "av_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      av_scripts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          production_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          production_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          production_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "av_scripts_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_sheet_cast: {
         Row: {
           block_rehearsal: string | null

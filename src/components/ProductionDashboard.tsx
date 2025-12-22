@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X } from "lucide-react";
+import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video } from "lucide-react";
 import { CastManager } from "./CastManager";
 import { CrewManager } from "./CrewManager";
 import { SceneManager } from "./SceneManager";
 import { ShootDayManager } from "./ShootDayManager";
 import { CallSheetManager } from "./CallSheetManager";
 import { DayOutOfDays } from "./DayOutOfDays";
+import { AVScriptBuilder } from "./AVScriptBuilder";
 
 interface Production {
   id: string;
@@ -224,29 +225,33 @@ export function ProductionDashboard() {
           {selectedProduction ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="bg-slate-800/50 border border-slate-700 mb-6">
-                <TabsTrigger value="cast" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="cast" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Users className="w-4 h-4 mr-2" />
                   Cast
                 </TabsTrigger>
-                <TabsTrigger value="crew" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="crew" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Users className="w-4 h-4 mr-2" />
                   Crew
                 </TabsTrigger>
-                <TabsTrigger value="scenes" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="scenes" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <FileText className="w-4 h-4 mr-2" />
                   Scenes
                 </TabsTrigger>
-                <TabsTrigger value="schedule" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="schedule" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Calendar className="w-4 h-4 mr-2" />
                   Schedule
                 </TabsTrigger>
-                <TabsTrigger value="callsheets" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="callsheets" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Clapperboard className="w-4 h-4 mr-2" />
                   Call Sheets
                 </TabsTrigger>
-                <TabsTrigger value="dood" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="dood" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Calendar className="w-4 h-4 mr-2" />
                   Day-out-of-Days
+                </TabsTrigger>
+                <TabsTrigger value="avscript" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                  <Video className="w-4 h-4 mr-2" />
+                  A/V Script
                 </TabsTrigger>
               </TabsList>
 
@@ -267,6 +272,9 @@ export function ProductionDashboard() {
               </TabsContent>
               <TabsContent value="dood">
                 <DayOutOfDays productionId={selectedProduction.id} />
+              </TabsContent>
+              <TabsContent value="avscript">
+                <AVScriptBuilder productionId={selectedProduction.id} />
               </TabsContent>
             </Tabs>
           ) : (
