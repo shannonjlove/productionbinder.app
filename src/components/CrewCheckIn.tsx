@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { CheckCircle, Clock, MapPin, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCrewCheckIn } from './MobileCrewCheckIn';
 
 interface CrewCheckInProps {
   callSheetId: string;
@@ -24,8 +26,14 @@ interface CheckIn {
 }
 
 export function CrewCheckIn({ callSheetId, productionId }: CrewCheckInProps) {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [location, setLocation] = useState('');
+
+  // Render mobile-optimized view on mobile devices
+  if (isMobile) {
+    return <MobileCrewCheckIn callSheetId={callSheetId} productionId={productionId} />;
+  }
 
   // Fetch crew members for this production
   const { data: crewMembers = [] } = useQuery({
