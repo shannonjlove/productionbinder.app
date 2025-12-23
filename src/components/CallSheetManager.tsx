@@ -88,7 +88,7 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -111,16 +111,16 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-white">Call Sheets</h3>
-        <p className="text-sm text-slate-400">Create and manage call sheets for each shoot day</p>
+        <h3 className="text-lg font-semibold text-foreground">Call Sheets</h3>
+        <p className="text-sm text-muted-foreground">Create and manage call sheets for each shoot day</p>
       </div>
 
       {shootDays.length === 0 ? (
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card variant="glass" className="glow-primary">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Clapperboard className="w-12 h-12 text-slate-600 mb-4" />
-            <p className="text-slate-400 mb-4">No shoot days scheduled yet</p>
-            <p className="text-sm text-slate-500">Add shoot days in the Schedule tab first</p>
+            <Clapperboard className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground mb-4">No shoot days scheduled yet</p>
+            <p className="text-sm text-muted-foreground">Add shoot days in the Schedule tab first</p>
           </CardContent>
         </Card>
       ) : (
@@ -128,11 +128,11 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
           {shootDays.map((day) => {
             const callSheet = getCallSheetForDay(day.id);
             return (
-              <Card key={day.id} className="bg-slate-800/50 border-slate-700">
+              <Card key={day.id} variant="glow" className="transition-all duration-300">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg text-white flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-500 flex items-center justify-center text-sm font-bold">
+                    <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center text-sm font-bold shadow-glow-sm">
                         {day.day_number}
                       </span>
                       Day {day.day_number}
@@ -140,8 +140,8 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
                     {callSheet && (
                       <span className={`text-xs px-2 py-1 rounded ${
                         callSheet.status === "published" 
-                          ? "bg-green-600/20 text-green-400" 
-                          : "bg-slate-600/20 text-slate-400"
+                          ? "bg-green-500/20 text-green-400" 
+                          : "bg-secondary text-muted-foreground"
                       }`}>
                         {callSheet.status}
                       </span>
@@ -149,9 +149,9 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-400 mb-2">{day.shoot_date}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{day.shoot_date}</p>
                   {day.location_name && (
-                    <p className="text-sm text-slate-500 mb-4">{day.location_name}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{day.location_name}</p>
                   )}
                   
                   {callSheet ? (
@@ -162,12 +162,12 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
                           setSelectedShootDay(day);
                           setSelectedCallSheet(callSheet);
                         }}
-                        className="flex-1 bg-slate-700 hover:bg-slate-600"
+                        className="flex-1 bg-secondary hover:bg-secondary/80 text-foreground"
                       >
                         <Eye className="w-4 h-4 mr-2" />
                         Edit
                       </Button>
-                      <Button size="sm" variant="outline" className="border-slate-600 text-slate-300">
+                      <Button size="sm" variant="outline" className="border-border text-foreground hover:bg-secondary/50">
                         <Send className="w-4 h-4" />
                       </Button>
                     </div>
@@ -175,7 +175,7 @@ export function CallSheetManager({ productionId }: CallSheetManagerProps) {
                     <Button 
                       size="sm" 
                       onClick={() => createCallSheet(day.id)}
-                      className="w-full bg-amber-600 hover:bg-amber-700"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover-glow"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Create Call Sheet
