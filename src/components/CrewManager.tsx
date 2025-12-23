@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Save } from "lucide-react";
@@ -154,7 +153,7 @@ export function CrewManager({ productionId }: CrewManagerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -163,22 +162,22 @@ export function CrewManager({ productionId }: CrewManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">Crew Members</h3>
-          <p className="text-sm text-slate-400">Manage your production's crew</p>
+          <h3 className="text-lg font-semibold text-foreground">Crew Members</h3>
+          <p className="text-sm text-muted-foreground">Manage your production's crew</p>
         </div>
         <div className="flex items-center gap-4">
           <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-            <SelectTrigger className="w-48 bg-slate-700/50 border-slate-600 text-white">
+            <SelectTrigger className="w-48 bg-secondary/50 border-border text-foreground">
               <SelectValue placeholder="Filter by department" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent className="glass-panel border-border/50">
               <SelectItem value="all">All Departments</SelectItem>
               {DEPARTMENTS.map(dept => (
                 <SelectItem key={dept} value={dept}>{dept}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={addCrewMember} className="bg-amber-600 hover:bg-amber-700">
+          <Button onClick={addCrewMember} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
             <Plus className="w-4 h-4 mr-2" />
             Add Crew
           </Button>
@@ -186,11 +185,11 @@ export function CrewManager({ productionId }: CrewManagerProps) {
       </div>
 
       {crewMembers.length === 0 ? (
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card variant="glass">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Users className="w-12 h-12 text-slate-600 mb-4" />
-            <p className="text-slate-400 mb-4">No crew members yet</p>
-            <Button onClick={addCrewMember} variant="outline" className="border-slate-600 text-slate-300">
+            <Users className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground mb-4">No crew members yet</p>
+            <Button onClick={addCrewMember} variant="outline" className="border-border/50 text-foreground hover:bg-secondary/50">
               <Plus className="w-4 h-4 mr-2" />
               Add First Crew Member
             </Button>
@@ -200,23 +199,23 @@ export function CrewManager({ productionId }: CrewManagerProps) {
         <div className="space-y-8">
           {Object.entries(groupedCrew).map(([department, members]) => (
             <div key={department}>
-              <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 {department} ({members.length})
               </h4>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {members.map((crew) => (
-                  <Card key={crew.id} className="bg-slate-800/50 border-slate-700">
+                  <Card key={crew.id} variant="glow">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <Select
                           value={crew.department}
                           onValueChange={(value) => updateCrewMember(crew.id, "department", value)}
                         >
-                          <SelectTrigger className="w-32 h-7 text-xs bg-slate-700/50 border-slate-600 text-slate-300">
+                          <SelectTrigger className="w-32 h-7 text-xs bg-secondary/50 border-border text-foreground">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-slate-800 border-slate-700">
+                          <SelectContent className="glass-panel border-border/50">
                             {DEPARTMENTS.map(dept => (
                               <SelectItem key={dept} value={dept} className="text-xs">{dept}</SelectItem>
                             ))}
@@ -227,7 +226,7 @@ export function CrewManager({ productionId }: CrewManagerProps) {
                             size="sm"
                             variant="ghost"
                             onClick={() => saveCrewMember(crew)}
-                            className="text-slate-400 hover:text-green-400 h-7 w-7 p-0"
+                            className="text-muted-foreground hover:text-green-400 h-7 w-7 p-0"
                           >
                             <Save className="w-4 h-4" />
                           </Button>
@@ -235,7 +234,7 @@ export function CrewManager({ productionId }: CrewManagerProps) {
                             size="sm"
                             variant="ghost"
                             onClick={() => deleteCrewMember(crew.id)}
-                            className="text-slate-400 hover:text-red-400 h-7 w-7 p-0"
+                            className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -246,26 +245,26 @@ export function CrewManager({ productionId }: CrewManagerProps) {
                         <Input
                           value={crew.job_title}
                           onChange={(e) => updateCrewMember(crew.id, "job_title", e.target.value)}
-                          className="bg-slate-700/50 border-slate-600 text-white text-sm font-medium"
+                          className="bg-secondary/50 border-border text-foreground text-sm font-medium"
                           placeholder="Job Title"
                         />
                         <Input
                           value={crew.name}
                           onChange={(e) => updateCrewMember(crew.id, "name", e.target.value)}
-                          className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                          className="bg-secondary/50 border-border text-foreground text-sm"
                           placeholder="Name"
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <Input
                             value={crew.email || ""}
                             onChange={(e) => updateCrewMember(crew.id, "email", e.target.value)}
-                            className="bg-slate-700/50 border-slate-600 text-white text-xs"
+                            className="bg-secondary/50 border-border text-foreground text-xs"
                             placeholder="Email"
                           />
                           <Input
                             value={crew.phone || ""}
                             onChange={(e) => updateCrewMember(crew.id, "phone", e.target.value)}
-                            className="bg-slate-700/50 border-slate-600 text-white text-xs"
+                            className="bg-secondary/50 border-border text-foreground text-xs"
                             placeholder="Phone"
                           />
                         </div>

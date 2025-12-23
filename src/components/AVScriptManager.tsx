@@ -84,8 +84,8 @@ function SortableRow({ entry, wordCount, duration, updateEntry, deleteEntry }: S
   };
 
   return (
-    <TableRow ref={setNodeRef} style={style} className="border-slate-700 hover:bg-slate-700/30">
-      <TableCell className="text-slate-500 cursor-grab" {...attributes} {...listeners}>
+    <TableRow ref={setNodeRef} style={style} className="border-border/50 hover:bg-secondary/30">
+      <TableCell className="text-muted-foreground cursor-grab" {...attributes} {...listeners}>
         <GripVertical className="w-4 h-4" />
       </TableCell>
       <TableCell>
@@ -93,7 +93,7 @@ function SortableRow({ entry, wordCount, duration, updateEntry, deleteEntry }: S
           value={entry.segment || ""}
           onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
           placeholder="Segment..."
-          className="bg-transparent border-slate-600 text-white text-sm"
+          className="bg-transparent border-border text-foreground text-sm"
         />
       </TableCell>
       <TableCell>
@@ -101,7 +101,7 @@ function SortableRow({ entry, wordCount, duration, updateEntry, deleteEntry }: S
           value={entry.visual || ""}
           onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
           placeholder="Visual description..."
-          className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+          className="bg-transparent border-border text-foreground text-sm min-h-[60px] resize-none"
         />
       </TableCell>
       <TableCell>
@@ -109,18 +109,18 @@ function SortableRow({ entry, wordCount, duration, updateEntry, deleteEntry }: S
           value={entry.audio || ""}
           onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
           placeholder="Audio/narration..."
-          className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+          className="bg-transparent border-border text-foreground text-sm min-h-[60px] resize-none"
         />
       </TableCell>
       <TableCell className="text-center">
-        <span className="text-sm font-mono text-amber-500">{duration}</span>
+        <span className="text-sm font-mono text-primary">{duration}</span>
       </TableCell>
       <TableCell>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => deleteEntry(entry.id)}
-          className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="w-3 h-3" />
         </Button>
@@ -422,7 +422,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -432,28 +432,28 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">A/V Script Builder</h2>
-          <p className="text-slate-400">Two-column scripts for commercials and video content</p>
+          <h2 className="text-2xl font-bold text-foreground">A/V Script Builder</h2>
+          <p className="text-muted-foreground">Two-column scripts for commercials and video content</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-amber-600 hover:bg-amber-700">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
               <Plus className="w-4 h-4 mr-2" />
               New Script
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogContent className="glass-panel border-border/50">
             <DialogHeader>
-              <DialogTitle className="text-white">New A/V Script</DialogTitle>
+              <DialogTitle className="text-foreground">New A/V Script</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
                 placeholder="Script name..."
                 value={newScriptName}
                 onChange={(e) => setNewScriptName(e.target.value)}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-secondary/50 border-border text-foreground"
               />
-              <Button onClick={createScript} className="w-full bg-amber-600 hover:bg-amber-700">
+              <Button onClick={createScript} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
                 Create Script
               </Button>
             </div>
@@ -463,31 +463,31 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
 
       {/* Script List */}
       {scripts.length === 0 ? (
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card variant="glass">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="w-12 h-12 text-slate-600 mb-4" />
-            <p className="text-slate-400">No scripts yet. Create your first A/V script.</p>
+            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No scripts yet. Create your first A/V script.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Script Selector */}
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card variant="glass">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-300">Scripts</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Scripts</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {scripts.map((script) => (
                 <div
                   key={script.id}
-                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200 ${
                     selectedScript?.id === script.id
-                      ? "bg-amber-600/20 border border-amber-600/30"
-                      : "hover:bg-slate-700/50"
+                      ? "bg-primary/20 border border-primary/30 shadow-glow-sm"
+                      : "hover:bg-secondary/50"
                   }`}
                   onClick={() => setSelectedScript(script)}
                 >
-                  <span className="text-sm text-white truncate">{script.name}</span>
+                  <span className="text-sm text-foreground truncate">{script.name}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -495,7 +495,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                       e.stopPropagation();
                       deleteScript(script.id);
                     }}
-                    className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -505,14 +505,14 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
           </Card>
 
           {/* Script Editor */}
-          <Card className="lg:col-span-3 bg-slate-800/50 border-slate-700">
+          <Card variant="glass" className="lg:col-span-3">
             {selectedScript ? (
               <>
-                <CardHeader className="border-b border-slate-700">
+                <CardHeader className="border-b border-border/50">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-white">{selectedScript.name}</CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
+                      <CardTitle className="text-foreground">{selectedScript.name}</CardTitle>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           {getTotalDuration()}
@@ -523,20 +523,20 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Select value={pacing} onValueChange={(v: PacingType) => setPacing(v)}>
-                        <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600 text-white">
+                        <SelectTrigger className="w-32 bg-secondary/50 border-border text-foreground">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectContent className="glass-panel border-border/50">
                           <SelectItem value="slow">Slow (120 wpm)</SelectItem>
                           <SelectItem value="medium">Medium (150 wpm)</SelectItem>
                           <SelectItem value="fast">Fast (180 wpm)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" onClick={exportToPDF} className="border-slate-600 text-slate-300">
+                      <Button variant="outline" onClick={exportToPDF} className="border-border/50 text-foreground hover:bg-secondary/50">
                         <Download className="w-4 h-4 mr-2" />
                         Export PDF
                       </Button>
-                      <Button onClick={addEntry} className="bg-amber-600 hover:bg-amber-700">
+                      <Button onClick={addEntry} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Row
                       </Button>
@@ -551,13 +551,13 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                   >
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-slate-700 hover:bg-transparent">
-                          <TableHead className="w-8 text-slate-400"></TableHead>
-                          <TableHead className="w-32 text-slate-400">Segment</TableHead>
-                          <TableHead className="text-slate-400">Visual</TableHead>
-                          <TableHead className="text-slate-400">Audio</TableHead>
-                          <TableHead className="w-20 text-slate-400">Duration</TableHead>
-                          <TableHead className="w-12 text-slate-400"></TableHead>
+                        <TableRow className="border-border/50 hover:bg-transparent">
+                          <TableHead className="w-8 text-muted-foreground"></TableHead>
+                          <TableHead className="w-32 text-muted-foreground">Segment</TableHead>
+                          <TableHead className="text-muted-foreground">Visual</TableHead>
+                          <TableHead className="text-muted-foreground">Audio</TableHead>
+                          <TableHead className="w-20 text-muted-foreground">Duration</TableHead>
+                          <TableHead className="w-12 text-muted-foreground"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -583,7 +583,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                         </SortableContext>
                         {entries.length === 0 && (
                           <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                               No entries yet. Click "Add Row" to start building your script.
                             </TableCell>
                           </TableRow>
@@ -595,7 +595,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
               </>
             ) : (
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-slate-400">Select a script to edit</p>
+                <p className="text-muted-foreground">Select a script to edit</p>
               </CardContent>
             )}
           </Card>
