@@ -247,33 +247,33 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="glass-header rounded-lg p-4 flex items-center justify-between animate-fade-in-up">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={onBack} className="text-slate-400 hover:text-white">
+          <Button variant="ghost" onClick={onBack} className="text-muted-foreground hover:text-foreground hover:bg-secondary/50">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
           <div>
-            <h3 className="text-lg font-semibold text-white">Day {shootDay.day_number} Call Sheet</h3>
-            <p className="text-sm text-slate-400">{shootDay.shoot_date}</p>
+            <h3 className="text-lg font-semibold text-foreground">Day {shootDay.day_number} Call Sheet</h3>
+            <p className="text-sm text-muted-foreground">{shootDay.shoot_date}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <NotificationToggle />
-          <Button onClick={saveCallSheet} className="bg-slate-700 hover:bg-slate-600">
+          <Button onClick={saveCallSheet} className="bg-secondary hover:bg-secondary/80 text-foreground shadow-glow-sm">
             <Save className="w-4 h-4 mr-2" />
             Save
           </Button>
-          <Button onClick={publishCallSheet} disabled={publishing} className="bg-amber-600 hover:bg-amber-700">
+          <Button onClick={publishCallSheet} disabled={publishing} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover-glow">
             {publishing ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary-foreground mr-2" />
             ) : (
               <Send className="w-4 h-4 mr-2" />
             )}
@@ -282,13 +282,13 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
         </div>
       </div>
 
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList className="bg-slate-800 border-slate-700">
-          <TabsTrigger value="details" className="data-[state=active]:bg-slate-700">
+      <Tabs defaultValue="details" className="w-full animate-fade-in-up animate-stagger-2">
+        <TabsList className="bg-secondary/50 border border-border/50">
+          <TabsTrigger value="details" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
             <FileText className="w-4 h-4 mr-2" />
             Details
           </TabsTrigger>
-          <TabsTrigger value="checkin" className="data-[state=active]:bg-slate-700">
+          <TabsTrigger value="checkin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
             <UserCheck className="w-4 h-4 mr-2" />
             Crew Check-In
           </TabsTrigger>
@@ -297,78 +297,78 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
         <TabsContent value="details" className="space-y-6 mt-6">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Call Times */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card variant="glass" className="animate-fade-in-up animate-stagger-3 hover-glow">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-amber-500" />
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
                   Call Times
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-slate-400">General Crew Call</Label>
+                    <Label className="text-muted-foreground">General Crew Call</Label>
                     <Input
                       type="time"
                       value={callSheet.general_crew_call || ""}
                       onChange={(e) => updateCallSheet("general_crew_call", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
+                      className="bg-secondary/50 border-border text-foreground"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-400">Shooting Call</Label>
+                    <Label className="text-muted-foreground">Shooting Call</Label>
                     <Input
                       type="time"
                       value={callSheet.shooting_call || ""}
                       onChange={(e) => updateCallSheet("shooting_call", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
+                      className="bg-secondary/50 border-border text-foreground"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-400">Courtesy Breakfast</Label>
+                    <Label className="text-muted-foreground">Courtesy Breakfast</Label>
                     <Input
                       type="time"
                       value={callSheet.courtesy_breakfast || ""}
                       onChange={(e) => updateCallSheet("courtesy_breakfast", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
+                      className="bg-secondary/50 border-border text-foreground"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-400">Lunch</Label>
+                    <Label className="text-muted-foreground">Lunch</Label>
                     <Input
                       type="time"
                       value={callSheet.lunch_time || ""}
                       onChange={(e) => updateCallSheet("lunch_time", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
+                      className="bg-secondary/50 border-border text-foreground"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-slate-400">Script Color</Label>
+                    <Label className="text-muted-foreground">Script Color</Label>
                     <Input
                       value={callSheet.script_color || ""}
                       onChange={(e) => updateCallSheet("script_color", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
+                      className="bg-secondary/50 border-border text-foreground"
                       placeholder="BLUE"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-400">Schedule Color</Label>
+                    <Label className="text-muted-foreground">Schedule Color</Label>
                     <Input
                       value={callSheet.schedule_color || ""}
                       onChange={(e) => updateCallSheet("schedule_color", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
+                      className="bg-secondary/50 border-border text-foreground"
                       placeholder="PINK"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-slate-400">Safety Notes</Label>
+                  <Label className="text-muted-foreground">Safety Notes</Label>
                   <Textarea
                     value={callSheet.safety_notes || ""}
                     onChange={(e) => updateCallSheet("safety_notes", e.target.value)}
-                    className="bg-slate-700/50 border-slate-600 text-white resize-none"
+                    className="bg-secondary/50 border-border text-foreground resize-none"
                     rows={2}
                     placeholder="Safety first! No forced calls..."
                   />
@@ -377,10 +377,10 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
             </Card>
 
             {/* Scenes */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card variant="glass" className="animate-fade-in-up animate-stagger-4 hover-glow">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-amber-500" />
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
                   Scenes ({selectedScenes.length})
                 </CardTitle>
               </CardHeader>
@@ -392,10 +392,10 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                       <Badge
                         key={scene.id}
                         variant={isSelected ? "default" : "outline"}
-                        className={`cursor-pointer ${
+                        className={`cursor-pointer transition-all ${
                           isSelected 
-                            ? "bg-amber-600 hover:bg-amber-700 text-white" 
-                            : "border-slate-600 text-slate-400 hover:bg-slate-700"
+                            ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm" 
+                            : "border-border text-muted-foreground hover:bg-secondary/50"
                         }`}
                         onClick={() => toggleSceneInCallSheet(scene.id)}
                       >
@@ -409,10 +409,10 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
           </div>
 
           {/* Cast Call Times */}
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card variant="glass" className="animate-fade-in-up animate-stagger-5 hover-glow">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-500" />
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
                 Cast ({selectedCast.length})
               </CardTitle>
             </CardHeader>
@@ -424,10 +424,10 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                     <Badge
                       key={cast.id}
                       variant={isSelected ? "default" : "outline"}
-                      className={`cursor-pointer ${
+                      className={`cursor-pointer transition-all ${
                         isSelected 
-                          ? "bg-amber-600 hover:bg-amber-700 text-white" 
-                          : "border-slate-600 text-slate-400 hover:bg-slate-700"
+                          ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm" 
+                          : "border-border text-muted-foreground hover:bg-secondary/50"
                       }`}
                       onClick={() => toggleCastInCallSheet(cast.id)}
                     >
@@ -438,19 +438,19 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
               </div>
 
               {selectedCast.length > 0 && (
-                <div className="border-t border-slate-700 pt-4">
+                <div className="border-t border-border/50 pt-4">
                   <div className="grid gap-2">
                     {selectedCast.map((cast) => {
                       const castCall = callSheetCast.find(cc => cc.cast_member_id === cast.id);
                       return (
                         <div key={cast.id} className="grid grid-cols-12 gap-2 items-center">
                           <div className="col-span-1">
-                            <span className="text-amber-500 font-bold">{cast.cast_id}</span>
+                            <span className="text-primary font-bold">{cast.cast_id}</span>
                           </div>
                           <div className="col-span-3">
-                            <span className="text-white">{cast.character_name}</span>
+                            <span className="text-foreground">{cast.character_name}</span>
                             {cast.actor_name && (
-                              <span className="text-slate-500 text-sm ml-2">({cast.actor_name})</span>
+                              <span className="text-muted-foreground text-sm ml-2">({cast.actor_name})</span>
                             )}
                           </div>
                           <div className="col-span-2">
@@ -458,7 +458,7 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                               type="time"
                               value={castCall?.call_time || ""}
                               onChange={(e) => updateCastCall(cast.id, "call_time", e.target.value)}
-                              className="bg-slate-700/50 border-slate-600 text-white h-8 text-sm"
+                              className="bg-secondary/50 border-border text-foreground h-8 text-sm"
                               placeholder="Call"
                             />
                           </div>
@@ -466,7 +466,7 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                             <Input
                               value={castCall?.status || ""}
                               onChange={(e) => updateCastCall(cast.id, "status", e.target.value)}
-                              className="bg-slate-700/50 border-slate-600 text-white h-8 text-sm"
+                              className="bg-secondary/50 border-border text-foreground h-8 text-sm"
                               placeholder="Status"
                             />
                           </div>
@@ -474,7 +474,7 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                             <Input
                               value={castCall?.special_instructions || ""}
                               onChange={(e) => updateCastCall(cast.id, "special_instructions", e.target.value)}
-                              className="bg-slate-700/50 border-slate-600 text-white h-8 text-sm"
+                              className="bg-secondary/50 border-border text-foreground h-8 text-sm"
                               placeholder="Special instructions"
                             />
                           </div>
@@ -488,7 +488,7 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
           </Card>
         </TabsContent>
 
-        <TabsContent value="checkin" className="mt-6">
+        <TabsContent value="checkin" className="mt-6 animate-fade-in-up">
           <CrewCheckIn callSheetId={callSheet.id} productionId={productionId} />
         </TabsContent>
       </Tabs>
