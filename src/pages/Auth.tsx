@@ -12,26 +12,32 @@ export default function Auth() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [resetMode, setResetMode] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveryMode(true);
+        return;
+      }
+      if (session?.user && !recoveryMode) {
         navigate("/");
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+      if (session?.user && !recoveryMode) {
         navigate("/");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, recoveryMode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +120,36 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password || !confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated successfully!");
+      setRecoveryMode(false);
+      navigate("/");
+    }
+    setLoading(false);
+  };
+
   const PasswordInput = ({ id, value, onChange, placeholder }: {
     id: string;
     value: string;
@@ -154,13 +190,45 @@ export default function Auth() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Production Hub</h1>
             <p className="text-muted-foreground mt-1">
-              {resetMode ? "Reset your password" : "Call sheets, crew management & production tools"}
+              {recoveryMode 
+                ? "Set your new password" 
+                : resetMode 
+                  ? "Reset your password" 
+                  : "Call sheets, crew management & production tools"}
             </p>
           </div>
         </div>
         
         <div className="px-8 pb-8">
-          {resetMode ? (
+          {recoveryMode ? (
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password" className="text-foreground">New Password</Label>
+                <PasswordInput
+                  id="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password" className="text-foreground">Confirm Password</Label>
+                <PasswordInput
+                  id="confirm-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-glow-sm hover:shadow-glow transition-all"
+              >
+                {loading ? "Updating..." : "Update Password"}
+              </Button>
+            </form>
+          ) : resetMode ? (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reset-email" className="text-foreground">Email</Label>
