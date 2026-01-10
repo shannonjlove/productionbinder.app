@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Film, Clapperboard, Eye, EyeOff } from "lucide-react";
+import { Film, Clapperboard, Eye, EyeOff, Mail } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -18,6 +18,8 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
+  const [magicLinkMode, setMagicLinkMode] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -116,6 +118,32 @@ export default function Auth() {
     } else {
       toast.success("Password reset email sent! Check your inbox.");
       setResetMode(false);
+    }
+    setLoading(false);
+  };
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    
+    setLoading(true);
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectUrl,
+      }
+    });
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setMagicLinkSent(true);
+      toast.success("Magic link sent! Check your email inbox.");
     }
     setLoading(false);
   };
@@ -257,6 +285,69 @@ export default function Auth() {
                 Back to Sign In
               </Button>
             </form>
+          ) : magicLinkMode ? (
+            magicLinkSent ? (
+              <div className="text-center space-y-4 py-6">
+                <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Mail className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Check your email</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    We've sent a magic link to <span className="font-medium text-foreground">{email}</span>
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click the link in the email to sign in. The link will expire in 24 hours.
+                </p>
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setMagicLinkMode(false);
+                    setMagicLinkSent(false);
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Back to Sign In
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleMagicLink} className="space-y-4">
+                <div className="text-center mb-4">
+                  <h3 className="font-semibold text-foreground">Sign in with Magic Link</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No password required. We'll email you a secure link.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="magic-email" className="text-foreground">Email</Label>
+                  <Input
+                    id="magic-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-glow-sm hover:shadow-glow transition-all"
+                >
+                  {loading ? "Sending..." : "Send Magic Link"}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setMagicLinkMode(false)}
+                  className="w-full text-muted-foreground hover:text-foreground"
+                >
+                  Back to Sign In
+                </Button>
+              </form>
+            )
           ) : (
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
@@ -312,6 +403,25 @@ export default function Auth() {
                     {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
+                
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMagicLinkMode(true)}
+                  className="w-full border-border text-foreground hover:bg-secondary/50 transition-all"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Sign in with Magic Link
+                </Button>
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4 mt-6">
