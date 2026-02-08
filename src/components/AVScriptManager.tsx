@@ -10,23 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Trash2, Save, FileText, Clock, GripVertical, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface AVScript {
   id: string;
@@ -59,76 +42,6 @@ const PACING_RATES: Record<PacingType, number> = {
   fast: 180,
 };
 
-interface SortableRowProps {
-  entry: AVScriptEntry;
-  wordCount: number;
-  duration: string;
-  updateEntry: (id: string, field: keyof AVScriptEntry, value: string | number) => void;
-  deleteEntry: (id: string) => void;
-}
-
-function SortableRow({ entry, wordCount, duration, updateEntry, deleteEntry }: SortableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: entry.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <TableRow ref={setNodeRef} style={style} className="border-border/50 hover:bg-secondary/30">
-      <TableCell className="text-muted-foreground cursor-grab" {...attributes} {...listeners}>
-        <GripVertical className="w-4 h-4" />
-      </TableCell>
-      <TableCell>
-        <Input
-          value={entry.segment || ""}
-          onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
-          placeholder="Segment..."
-          className="bg-transparent border-border text-foreground text-sm"
-        />
-      </TableCell>
-      <TableCell>
-        <Textarea
-          value={entry.visual || ""}
-          onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
-          placeholder="Visual description..."
-          className="bg-transparent border-border text-foreground text-sm min-h-[60px] resize-none"
-        />
-      </TableCell>
-      <TableCell>
-        <Textarea
-          value={entry.audio || ""}
-          onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
-          placeholder="Audio/narration..."
-          className="bg-transparent border-border text-foreground text-sm min-h-[60px] resize-none"
-        />
-      </TableCell>
-      <TableCell className="text-center">
-        <span className="text-sm font-mono text-primary">{duration}</span>
-      </TableCell>
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => deleteEntry(entry.id)}
-          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="w-3 h-3" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
-}
-
 export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   const [scripts, setScripts] = useState<AVScript[]>([]);
   const [selectedScript, setSelectedScript] = useState<AVScript | null>(null);
@@ -137,13 +50,6 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   const [newScriptName, setNewScriptName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pacing, setPacing] = useState<PacingType>("medium");
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   useEffect(() => {
     fetchScripts();
@@ -294,40 +200,6 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = entries.findIndex((e) => e.id === active.id);
-    const newIndex = entries.findIndex((e) => e.id === over.id);
-
-    const reorderedEntries = arrayMove(entries, oldIndex, newIndex);
-    
-    // Optimistic update
-    setEntries(reorderedEntries);
-
-    // Update sort_order in database
-    const updates = reorderedEntries.map((entry, index) => ({
-      id: entry.id,
-      sort_order: index + 1,
-    }));
-
-    for (const update of updates) {
-      const { error } = await supabase
-        .from("av_script_entries")
-        .update({ sort_order: update.sort_order })
-        .eq("id", update.id);
-
-      if (error) {
-        console.error("Failed to update sort order:", error);
-        toast.error("Failed to reorder entries");
-        fetchEntries(selectedScript!.id);
-        return;
-      }
-    }
-  };
-
   const countWords = (text: string | null): number => {
     if (!text || text.trim() === "") return 0;
     return text.trim().split(/\s+/).length;
@@ -422,7 +294,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     );
   }
@@ -432,28 +304,28 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">A/V Script Builder</h2>
-          <p className="text-muted-foreground">Two-column scripts for commercials and video content</p>
+          <h2 className="text-2xl font-bold text-white">A/V Script Builder</h2>
+          <p className="text-slate-400">Two-column scripts for commercials and video content</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
+            <Button className="bg-amber-600 hover:bg-amber-700">
               <Plus className="w-4 h-4 mr-2" />
               New Script
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass-panel border-border/50">
+          <DialogContent className="bg-slate-800 border-slate-700">
             <DialogHeader>
-              <DialogTitle className="text-foreground">New A/V Script</DialogTitle>
+              <DialogTitle className="text-white">New A/V Script</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
                 placeholder="Script name..."
                 value={newScriptName}
                 onChange={(e) => setNewScriptName(e.target.value)}
-                className="bg-secondary/50 border-border text-foreground"
+                className="bg-slate-700/50 border-slate-600 text-white"
               />
-              <Button onClick={createScript} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
+              <Button onClick={createScript} className="w-full bg-amber-600 hover:bg-amber-700">
                 Create Script
               </Button>
             </div>
@@ -463,31 +335,31 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
 
       {/* Script List */}
       {scripts.length === 0 ? (
-        <Card variant="glass">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No scripts yet. Create your first A/V script.</p>
+            <FileText className="w-12 h-12 text-slate-600 mb-4" />
+            <p className="text-slate-400">No scripts yet. Create your first A/V script.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Script Selector */}
-          <Card variant="glass">
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Scripts</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-300">Scripts</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {scripts.map((script) => (
                 <div
                   key={script.id}
-                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
                     selectedScript?.id === script.id
-                      ? "bg-primary/20 border border-primary/30 shadow-glow-sm"
-                      : "hover:bg-secondary/50"
+                      ? "bg-amber-600/20 border border-amber-600/30"
+                      : "hover:bg-slate-700/50"
                   }`}
                   onClick={() => setSelectedScript(script)}
                 >
-                  <span className="text-sm text-foreground truncate">{script.name}</span>
+                  <span className="text-sm text-white truncate">{script.name}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -495,7 +367,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                       e.stopPropagation();
                       deleteScript(script.id);
                     }}
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -505,14 +377,14 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
           </Card>
 
           {/* Script Editor */}
-          <Card variant="glass" className="lg:col-span-3">
+          <Card className="lg:col-span-3 bg-slate-800/50 border-slate-700">
             {selectedScript ? (
               <>
-                <CardHeader className="border-b border-border/50">
+                <CardHeader className="border-b border-slate-700">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-foreground">{selectedScript.name}</CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <CardTitle className="text-white">{selectedScript.name}</CardTitle>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           {getTotalDuration()}
@@ -523,20 +395,20 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Select value={pacing} onValueChange={(v: PacingType) => setPacing(v)}>
-                        <SelectTrigger className="w-32 bg-secondary/50 border-border text-foreground">
+                        <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600 text-white">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="glass-panel border-border/50">
+                        <SelectContent className="bg-slate-800 border-slate-700">
                           <SelectItem value="slow">Slow (120 wpm)</SelectItem>
                           <SelectItem value="medium">Medium (150 wpm)</SelectItem>
                           <SelectItem value="fast">Fast (180 wpm)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" onClick={exportToPDF} className="border-border/50 text-foreground hover:bg-secondary/50">
+                      <Button variant="outline" onClick={exportToPDF} className="border-slate-600 text-slate-300">
                         <Download className="w-4 h-4 mr-2" />
                         Export PDF
                       </Button>
-                      <Button onClick={addEntry} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
+                      <Button onClick={addEntry} className="bg-amber-600 hover:bg-amber-700">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Row
                       </Button>
@@ -544,58 +416,81 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-border/50 hover:bg-transparent">
-                          <TableHead className="w-8 text-muted-foreground"></TableHead>
-                          <TableHead className="w-32 text-muted-foreground">Segment</TableHead>
-                          <TableHead className="text-muted-foreground">Visual</TableHead>
-                          <TableHead className="text-muted-foreground">Audio</TableHead>
-                          <TableHead className="w-20 text-muted-foreground">Duration</TableHead>
-                          <TableHead className="w-12 text-muted-foreground"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <SortableContext
-                          items={entries.map((e) => e.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {entries.map((entry) => {
-                            const wordCount = countWords(entry.audio);
-                            const duration = calculateDuration(wordCount);
-                            
-                            return (
-                              <SortableRow
-                                key={entry.id}
-                                entry={entry}
-                                wordCount={wordCount}
-                                duration={duration}
-                                updateEntry={updateEntry}
-                                deleteEntry={deleteEntry}
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700 hover:bg-transparent">
+                        <TableHead className="w-8 text-slate-400"></TableHead>
+                        <TableHead className="w-32 text-slate-400">Segment</TableHead>
+                        <TableHead className="text-slate-400">Visual</TableHead>
+                        <TableHead className="text-slate-400">Audio</TableHead>
+                        <TableHead className="w-20 text-slate-400">Duration</TableHead>
+                        <TableHead className="w-12 text-slate-400"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {entries.map((entry) => {
+                        const wordCount = countWords(entry.audio);
+                        const duration = calculateDuration(wordCount);
+                        
+                        return (
+                          <TableRow key={entry.id} className="border-slate-700 hover:bg-slate-700/30">
+                            <TableCell className="text-slate-500">
+                              <GripVertical className="w-4 h-4" />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={entry.segment || ""}
+                                onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
+                                placeholder="Segment..."
+                                className="bg-transparent border-slate-600 text-white text-sm"
                               />
-                            );
-                          })}
-                        </SortableContext>
-                        {entries.length === 0 && (
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                              No entries yet. Click "Add Row" to start building your script.
+                            </TableCell>
+                            <TableCell>
+                              <Textarea
+                                value={entry.visual || ""}
+                                onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
+                                placeholder="Visual description..."
+                                className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Textarea
+                                value={entry.audio || ""}
+                                onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
+                                placeholder="Audio/narration..."
+                                className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="text-sm font-mono text-amber-500">{duration}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteEntry(entry.id)}
+                                className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
                             </TableCell>
                           </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </DndContext>
+                        );
+                      })}
+                      {entries.length === 0 && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                            No entries yet. Click "Add Row" to start building your script.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </>
             ) : (
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-muted-foreground">Select a script to edit</p>
+                <p className="text-slate-400">Select a script to edit</p>
               </CardContent>
             )}
           </Card>

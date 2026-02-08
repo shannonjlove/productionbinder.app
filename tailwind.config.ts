@@ -57,98 +57,33 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Midnight Navy Theme Colors
-        navy: {
-          900: "hsl(222 47% 11%)",
-          800: "hsl(217 33% 17%)",
-          700: "hsl(217 33% 22%)",
-          600: "hsl(217 33% 25%)",
-        },
-        amber: {
-          DEFAULT: "hsl(38 92% 50%)",
-          light: "hsl(45 93% 60%)",
-          dark: "hsl(38 92% 40%)",
-        },
-        plum: {
-          DEFAULT: "hsl(339 49% 35%)",
-          light: "hsl(339 49% 45%)",
-          dark: "hsl(339 49% 25%)",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-      },
-      boxShadow: {
-        'glow-sm': '0 0 10px hsl(38 92% 50% / 0.3)',
-        'glow': '0 0 20px hsl(38 92% 50% / 0.4)',
-        'glow-lg': '0 0 40px hsl(38 92% 50% / 0.5)',
-        'glow-accent': '0 0 20px hsl(339 49% 35% / 0.4)',
-        'glass': '0 10px 15px -3px hsl(0 0% 0% / 0.3)',
-      },
-      backdropBlur: {
-        glass: '12px',
-      },
       keyframes: {
         "accordion-down": {
-          from: { height: "0", opacity: "0" },
-          to: { height: "var(--radix-accordion-content-height)", opacity: "1" },
+          from: {
+            height: "0",
+          },
+          to: {
+            height: "var(--radix-accordion-content-height)",
+          },
         },
         "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)", opacity: "1" },
-          to: { height: "0", opacity: "0" },
-        },
-        "fade-in": {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "fade-out": {
-          "0%": { opacity: "1", transform: "translateY(0)" },
-          "100%": { opacity: "0", transform: "translateY(10px)" },
-        },
-        "scale-in": {
-          "0%": { transform: "scale(0.95)", opacity: "0" },
-          "100%": { transform: "scale(1)", opacity: "1" },
-        },
-        "scale-out": {
-          from: { transform: "scale(1)", opacity: "1" },
-          to: { transform: "scale(0.95)", opacity: "0" },
-        },
-        "slide-in-right": {
-          "0%": { transform: "translateX(100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        "slide-out-right": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(100%)" },
-        },
-        "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(38 92% 50% / 0.4)" },
-          "50%": { boxShadow: "0 0 40px hsl(38 92% 50% / 0.6)" },
-        },
-        shimmer: {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
+          from: {
+            height: "var(--radix-accordion-content-height)",
+          },
+          to: {
+            height: "0",
+          },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "fade-out": "fade-out 0.3s ease-out",
-        "scale-in": "scale-in 0.2s ease-out",
-        "scale-out": "scale-out 0.2s ease-out",
-        "slide-in-right": "slide-in-right 0.3s ease-out",
-        "slide-out-right": "slide-out-right 0.3s ease-out",
-        "enter": "fade-in 0.3s ease-out, scale-in 0.2s ease-out",
-        "exit": "fade-out 0.3s ease-out, scale-out 0.2s ease-out",
-        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
-        shimmer: "shimmer 2s linear infinite",
       },
     },
   },

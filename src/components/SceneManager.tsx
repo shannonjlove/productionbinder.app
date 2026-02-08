@@ -163,7 +163,7 @@ export function SceneManager({ productionId }: SceneManagerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     );
   }
@@ -172,21 +172,21 @@ export function SceneManager({ productionId }: SceneManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Scenes / Breakdown</h3>
-          <p className="text-sm text-muted-foreground">Manage your script breakdown and scenes</p>
+          <h3 className="text-lg font-semibold text-white">Scenes / Breakdown</h3>
+          <p className="text-sm text-slate-400">Manage your script breakdown and scenes</p>
         </div>
-        <Button onClick={addScene} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover-glow">
+        <Button onClick={addScene} className="bg-amber-600 hover:bg-amber-700">
           <Plus className="w-4 h-4 mr-2" />
           Add Scene
         </Button>
       </div>
 
       {scenes.length === 0 ? (
-        <Card variant="glass" className="glow-primary">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No scenes yet</p>
-            <Button onClick={addScene} variant="outline" className="border-border text-foreground hover:bg-secondary/50">
+            <FileText className="w-12 h-12 text-slate-600 mb-4" />
+            <p className="text-slate-400 mb-4">No scenes yet</p>
+            <Button onClick={addScene} variant="outline" className="border-slate-600 text-slate-300">
               <Plus className="w-4 h-4 mr-2" />
               Add First Scene
             </Button>
@@ -195,36 +195,36 @@ export function SceneManager({ productionId }: SceneManagerProps) {
       ) : (
         <div className="space-y-4">
           {scenes.map((scene) => (
-            <Card key={scene.id} variant="glass" className="hover-glow transition-all duration-300">
+            <Card key={scene.id} className="bg-slate-800/50 border-slate-700">
               <CardContent className="p-4">
                 <div className="grid gap-4 md:grid-cols-12">
                   <div className="md:col-span-1">
-                    <Label className="text-xs text-muted-foreground">Scene #</Label>
+                    <Label className="text-xs text-slate-500">Scene #</Label>
                     <Input
                       value={scene.scene_number}
                       onChange={(e) => updateScene(scene.id, "scene_number", e.target.value)}
-                      className="bg-secondary/50 border-border/50 text-foreground text-center font-bold"
+                      className="bg-slate-700/50 border-slate-600 text-white text-center font-bold"
                     />
                   </div>
                   <div className="md:col-span-3">
-                    <Label className="text-xs text-muted-foreground">Set Name</Label>
+                    <Label className="text-xs text-slate-500">Set Name</Label>
                     <Input
                       value={scene.set_name || ""}
                       onChange={(e) => updateScene(scene.id, "set_name", e.target.value)}
-                      className="bg-secondary/50 border-border/50 text-foreground"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                       placeholder="INT. DRUGSTORE"
                     />
                   </div>
                   <div className="md:col-span-1">
-                    <Label className="text-xs text-muted-foreground">I/E</Label>
+                    <Label className="text-xs text-slate-500">I/E</Label>
                     <Select
                       value={scene.int_ext || ""}
                       onValueChange={(value) => updateScene(scene.id, "int_ext", value)}
                     >
-                      <SelectTrigger className="bg-secondary/50 border-border/50 text-foreground">
+                      <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                         <SelectValue placeholder="-" />
                       </SelectTrigger>
-                      <SelectContent className="glass-panel border-border">
+                      <SelectContent className="bg-slate-800 border-slate-700">
                         <SelectItem value="INT">INT</SelectItem>
                         <SelectItem value="EXT">EXT</SelectItem>
                         <SelectItem value="I/E">I/E</SelectItem>
@@ -232,15 +232,15 @@ export function SceneManager({ productionId }: SceneManagerProps) {
                     </Select>
                   </div>
                   <div className="md:col-span-1">
-                    <Label className="text-xs text-muted-foreground">D/N</Label>
+                    <Label className="text-xs text-slate-500">D/N</Label>
                     <Select
                       value={scene.day_night || ""}
                       onValueChange={(value) => updateScene(scene.id, "day_night", value)}
                     >
-                      <SelectTrigger className="bg-secondary/50 border-border/50 text-foreground">
+                      <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                         <SelectValue placeholder="-" />
                       </SelectTrigger>
-                      <SelectContent className="glass-panel border-border">
+                      <SelectContent className="bg-slate-800 border-slate-700">
                         <SelectItem value="D">Day</SelectItem>
                         <SelectItem value="N">Night</SelectItem>
                         <SelectItem value="D/N">D/N</SelectItem>
@@ -248,38 +248,38 @@ export function SceneManager({ productionId }: SceneManagerProps) {
                     </Select>
                   </div>
                   <div className="md:col-span-1">
-                    <Label className="text-xs text-muted-foreground">Pages</Label>
+                    <Label className="text-xs text-slate-500">Pages</Label>
                     <Input
                       value={scene.page_count || ""}
                       onChange={(e) => updateScene(scene.id, "page_count", e.target.value)}
-                      className="bg-secondary/50 border-border/50 text-foreground"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                       placeholder="2 1/8"
                     />
                   </div>
                   <div className="md:col-span-4">
-                    <Label className="text-xs text-muted-foreground">Description</Label>
+                    <Label className="text-xs text-slate-500">Description</Label>
                     <Input
                       value={scene.description || ""}
                       onChange={(e) => updateScene(scene.id, "description", e.target.value)}
-                      className="bg-secondary/50 border-border/50 text-foreground"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                       placeholder="Scene description..."
                     />
                   </div>
                   <div className="md:col-span-1 flex items-end gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => saveScene(scene)} className="text-muted-foreground hover:text-green-400 hover-glow">
+                    <Button size="sm" variant="ghost" onClick={() => saveScene(scene)} className="text-slate-400 hover:text-green-400">
                       <Save className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteScene(scene.id)} className="text-muted-foreground hover:text-destructive">
+                    <Button size="sm" variant="ghost" onClick={() => deleteScene(scene.id)} className="text-slate-400 hover:text-red-400">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
 
                 {/* Cast in scene */}
-                <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="mt-4 pt-4 border-t border-slate-700">
                   <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-xs text-muted-foreground">Cast in Scene</Label>
+                    <Users className="w-4 h-4 text-slate-500" />
+                    <Label className="text-xs text-slate-500">Cast in Scene</Label>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {castMembers.map((cast) => {
@@ -288,10 +288,10 @@ export function SceneManager({ productionId }: SceneManagerProps) {
                         <Badge
                           key={cast.id}
                           variant={isInScene ? "default" : "outline"}
-                          className={`cursor-pointer transition-all duration-200 ${
+                          className={`cursor-pointer ${
                             isInScene 
-                              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm" 
-                              : "border-border text-muted-foreground hover:bg-secondary/50"
+                              ? "bg-amber-600 hover:bg-amber-700 text-white" 
+                              : "border-slate-600 text-slate-400 hover:bg-slate-700"
                           }`}
                           onClick={() => toggleCastInScene(scene.id, cast.id)}
                         >

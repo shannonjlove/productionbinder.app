@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Trash2, User, Save } from "lucide-react";
+import { Plus, Trash2, User, Mail, Phone, Save } from "lucide-react";
 
 interface CastMember {
   id: string;
@@ -117,7 +117,7 @@ export function CastManager({ productionId }: CastManagerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     );
   }
@@ -126,21 +126,21 @@ export function CastManager({ productionId }: CastManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Cast Members</h3>
-          <p className="text-sm text-muted-foreground">Manage your production's cast</p>
+          <h3 className="text-lg font-semibold text-white">Cast Members</h3>
+          <p className="text-sm text-slate-400">Manage your production's cast</p>
         </div>
-        <Button onClick={addCastMember} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-sm hover:shadow-glow transition-all">
+        <Button onClick={addCastMember} className="bg-amber-600 hover:bg-amber-700">
           <Plus className="w-4 h-4 mr-2" />
           Add Cast Member
         </Button>
       </div>
 
       {castMembers.length === 0 ? (
-        <Card variant="glass">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <User className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No cast members yet</p>
-            <Button onClick={addCastMember} variant="outline" className="border-border/50 text-foreground hover:bg-secondary/50">
+            <User className="w-12 h-12 text-slate-600 mb-4" />
+            <p className="text-slate-400 mb-4">No cast members yet</p>
+            <Button onClick={addCastMember} variant="outline" className="border-slate-600 text-slate-300">
               <Plus className="w-4 h-4 mr-2" />
               Add First Cast Member
             </Button>
@@ -149,11 +149,11 @@ export function CastManager({ productionId }: CastManagerProps) {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {castMembers.map((cast) => (
-            <Card key={cast.id} variant="glow">
+            <Card key={cast.id} className="bg-slate-800/50 border-slate-700">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
+                    <span className="w-8 h-8 rounded-full bg-amber-600/20 text-amber-500 flex items-center justify-center text-sm font-bold">
                       {cast.cast_id}
                     </span>
                   </div>
@@ -162,7 +162,7 @@ export function CastManager({ productionId }: CastManagerProps) {
                       size="sm"
                       variant="ghost"
                       onClick={() => saveCastMember(cast)}
-                      className="text-muted-foreground hover:text-green-400"
+                      className="text-slate-400 hover:text-green-400"
                     >
                       <Save className="w-4 h-4" />
                     </Button>
@@ -170,7 +170,7 @@ export function CastManager({ productionId }: CastManagerProps) {
                       size="sm"
                       variant="ghost"
                       onClick={() => deleteCastMember(cast.id)}
-                      className="text-muted-foreground hover:text-destructive"
+                      className="text-slate-400 hover:text-red-400"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -179,49 +179,49 @@ export function CastManager({ productionId }: CastManagerProps) {
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Character Name</Label>
+                    <Label className="text-xs text-slate-500">Character Name</Label>
                     <Input
                       value={cast.character_name}
                       onChange={(e) => updateCastMember(cast.id, "character_name", e.target.value)}
-                      className="bg-secondary/50 border-border text-foreground"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                       placeholder="Character name"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Actor Name</Label>
+                    <Label className="text-xs text-slate-500">Actor Name</Label>
                     <Input
                       value={cast.actor_name || ""}
                       onChange={(e) => updateCastMember(cast.id, "actor_name", e.target.value)}
-                      className="bg-secondary/50 border-border text-foreground"
+                      className="bg-slate-700/50 border-slate-600 text-white"
                       placeholder="Actor name"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label className="text-xs text-muted-foreground">Email</Label>
+                      <Label className="text-xs text-slate-500">Email</Label>
                       <Input
                         value={cast.email || ""}
                         onChange={(e) => updateCastMember(cast.id, "email", e.target.value)}
-                        className="bg-secondary/50 border-border text-foreground text-sm"
+                        className="bg-slate-700/50 border-slate-600 text-white text-sm"
                         placeholder="Email"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Phone</Label>
+                      <Label className="text-xs text-slate-500">Phone</Label>
                       <Input
                         value={cast.phone || ""}
                         onChange={(e) => updateCastMember(cast.id, "phone", e.target.value)}
-                        className="bg-secondary/50 border-border text-foreground text-sm"
+                        className="bg-slate-700/50 border-slate-600 text-white text-sm"
                         placeholder="Phone"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Notes</Label>
+                    <Label className="text-xs text-slate-500">Notes</Label>
                     <Textarea
                       value={cast.notes || ""}
                       onChange={(e) => updateCastMember(cast.id, "notes", e.target.value)}
-                      className="bg-secondary/50 border-border text-foreground text-sm resize-none"
+                      className="bg-slate-700/50 border-slate-600 text-white text-sm resize-none"
                       rows={2}
                       placeholder="Notes..."
                     />
