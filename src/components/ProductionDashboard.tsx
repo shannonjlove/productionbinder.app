@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Menu, X, Video, BookOpen } from "lucide-react";
+import { Plus, Film, Users, Clapperboard, Calendar, FileText, Menu, X, Video, BookOpen } from "lucide-react";
 import { CastManager } from "./CastManager";
 import { CrewManager } from "./CrewManager";
 import { SceneManager } from "./SceneManager";
@@ -29,7 +28,6 @@ interface Production {
 }
 
 export function ProductionDashboard() {
-  const { user, signOut } = useAuth();
   const [productions, setProductions] = useState<Production[]>([]);
   const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,8 +66,7 @@ export function ProductionDashboard() {
       .from("productions")
       .insert({
         name: newProductionName,
-        company_name: newProductionCompany || null,
-        created_by: user?.id
+        company_name: newProductionCompany || null
       })
       .select()
       .single();
@@ -87,10 +84,6 @@ export function ProductionDashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    toast.success("Signed out successfully");
-  };
 
   if (loading) {
     return (
@@ -185,22 +178,6 @@ export function ProductionDashboard() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-border/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-              <span className="text-sm font-medium text-foreground">
-                {user?.email?.[0].toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-foreground truncate">{user?.email}</p>
-            </div>
-          </div>
-          <Button onClick={handleSignOut} variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-foreground hover:bg-secondary/50">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
-        </div>
       </aside>
 
       {/* Main Content */}
