@@ -69,6 +69,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [versions, setVersions] = useState<Array<{ id: string; version_number: number; label: string | null; snapshot: any; created_at: string }>>([]);
+  const [previewVersion, setPreviewVersion] = useState<{ id: string; version_number: number; label: string | null; snapshot: any; created_at: string } | null>(null);
   const [versionLabel, setVersionLabel] = useState("");
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
 
