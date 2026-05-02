@@ -759,6 +759,59 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
           </Card>
         </div>
       )}
+
+      <Dialog open={!!previewVersion} onOpenChange={(open) => !open && setPreviewVersion(null)}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Preview · v{previewVersion?.version_number} {previewVersion?.label && `· ${previewVersion.label}`}
+            </DialogTitle>
+            <p className="text-xs text-slate-400">
+              {previewVersion && new Date(previewVersion.created_at).toLocaleString()}
+              {Array.isArray(previewVersion?.snapshot) && ` · ${previewVersion!.snapshot.length} segments`}
+            </p>
+          </DialogHeader>
+          <div className="overflow-auto flex-1 -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-700 hover:bg-transparent">
+                  <TableHead className="w-12 text-slate-400">#</TableHead>
+                  <TableHead className="w-32 text-slate-400">Segment</TableHead>
+                  <TableHead className="text-slate-400">Visual</TableHead>
+                  <TableHead className="text-slate-400">Audio</TableHead>
+                  <TableHead className="text-slate-400">Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(previewVersion?.snapshot) && previewVersion!.snapshot.map((e: any, i: number) => (
+                  <TableRow key={i} className="border-slate-700 hover:bg-slate-700/30 align-top">
+                    <TableCell className="text-slate-500 text-xs">{i + 1}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap">{e.segment || ""}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap">{e.visual || ""}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap">{e.audio || ""}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap text-slate-400">{e.notes || ""}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
+            <Button variant="outline" onClick={() => setPreviewVersion(null)} className="border-slate-600 text-slate-300">
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                const v = previewVersion;
+                setPreviewVersion(null);
+                if (v) restoreVersion(v.snapshot);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" /> Restore this version
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
