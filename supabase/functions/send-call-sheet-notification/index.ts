@@ -32,6 +32,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const esc = (s: unknown): string =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
   try {
     const request: NotificationRequest = await req.json();
     const { callSheet, recipient, recipients, method, batch } = request;
