@@ -86,10 +86,82 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   useEffect(() => {
     if (selectedScript) {
       fetchEntries(selectedScript.id);
+      fetchVersions(selectedScript.id);
     }
   }, [selectedScript]);
 
+  const fetchVersions = async (scriptId: string) => {
+    const { data } = await supabase
+      .from("av_script_versions")
+      .select("*")
+      .eq("script_id", scriptId)
+      .order("version_number", { ascending: false });
+    setVersions(data || []);
+  };
+
+  const saveVersion = async () => {
+    if (!selectedScript) return;
+    const nextNum = versions.length > 0 ? versions[0].version_number + 1 : 1;
+    const { error } = await supabase.from("av_script_versions").insert({
+      script_id: selectedScript.id,
+      version_number: nextNum,
+      label: versionLabel || `v${nextNum}`,
+      snapshot: entries as any,
+    });
+    if (error) {
+      toast.error("Failed to save version");
+    } else {
+      toast.success(`Saved version ${nextNum}`);
+      setVersionLabel("");
+      fetchVersions(selectedScript.id);
+    }
+  };
+
+  const restoreVersion = async (snapshot: any[]) => {
+    if (!selectedScript) return;
+    if (!confirm("Replace current entries with this version?")) return;
+    await supabase.from("av_script_entries").delete().eq("script_id", selectedScript.id);
+    const rows = snapshot.map((e: any, idx: number) => ({
+      script_id: selectedScript.id,
+      segment: e.segment ?? "",
+      visual: e.visual ?? "",
+      audio: e.audio ?? "",
+      notes: e.notes ?? "",
+      duration: e.duration ?? "00:00",
+      sort_order: idx,
+    }));
+    if (rows.length > 0) await supabase.from("av_script_entries").insert(rows);
+    fetchEntries(selectedScript.id);
+    toast.success("Version restored");
+  };
+
+  const exportToCSV = () => {
+    if (!selectedScript || entries.length === 0) {
+      toast.error("No entries to export");
+      return;
+    }
+    const esc = (v: string) => `"${(v || "").replace(/"/g, '""')}"`;
+    const header = ["Segment", "Visual", "Audio", "Notes", "Duration"].join(",");
+    const rows = entries.map(e =>
+      [e.segment || "", e.visual || "", e.audio || "", e.notes || "", e.duration || ""].map(esc).join(",")
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedScript.name.replace(/\s+/g, "_")}_av_script.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
   const fetchScripts = async () => {
+    const { data, error } = await supabase
+      .from("av_scripts")
+      .select("*")
+      .eq("production_id", productionId)
+      .order("created_at", { ascending: false });
     const { data, error } = await supabase
       .from("av_scripts")
       .select("*")
