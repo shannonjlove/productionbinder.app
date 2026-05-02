@@ -8,10 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Send, Clock, Users, FileText, MapPin, UserCheck, Bell } from "lucide-react";
+import { ArrowLeft, Save, Send, Clock, Users, FileText, MapPin, UserCheck, Bell, GripVertical } from "lucide-react";
 import { CrewCheckIn } from "@/components/CrewCheckIn";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { NotificationToggle } from "@/components/NotificationBanner";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableRow } from "@/components/SortableRow";
 interface ShootDay {
   id: string;
   day_number: number;
@@ -241,6 +248,42 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
     }
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const orderedSelectedScenes = [...callSheetScenes]
+    .sort((a, b) => a.scene_order - b.scene_order)
+    .map(cs => scenes.find(s => s.id === cs.scene_id))
+    .filter((s): s is Scene => !!s);
+
+  const handleSceneDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedSelectedScenes.findIndex(s => s.id === active.id);
+    const newIndex = orderedSelectedScenes.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(orderedSelectedScenes, oldIndex, newIndex);
+    const newCallSheetScenes = reordered.map((scene, idx) => {
+      const existing = callSheetScenes.find(cs => cs.scene_id === scene.id)!;
+      return { ...existing, scene_order: idx };
+    });
+    // Keep any entries that don't match (shouldn't happen) at end
+    setCallSheetScenes(newCallSheetScenes);
+
+    await Promise.all(
+      newCallSheetScenes.map(cs =>
+        supabase
+          .from("call_sheet_scenes")
+          .update({ scene_order: cs.scene_order })
+          .eq("call_sheet_id", callSheet.id)
+          .eq("scene_id", cs.scene_id)
+      )
+    );
+  };
+
   const selectedScenes = scenes.filter(s => callSheetScenes.some(cs => cs.scene_id === s.id));
   const selectedCast = castMembers.filter(c => callSheetCast.some(cc => cc.cast_member_id === c.id));
 
@@ -384,8 +427,8 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                   Scenes ({selectedScenes.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
                   {scenes.map((scene) => {
                     const isSelected = callSheetScenes.some(cs => cs.scene_id === scene.id);
                     return (
@@ -393,8 +436,8 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                         key={scene.id}
                         variant={isSelected ? "default" : "outline"}
                         className={`cursor-pointer ${
-                          isSelected 
-                            ? "bg-amber-600 hover:bg-amber-700 text-white" 
+                          isSelected
+                            ? "bg-amber-600 hover:bg-amber-700 text-white"
                             : "border-slate-600 text-slate-400 hover:bg-slate-700"
                         }`}
                         onClick={() => toggleSceneInCallSheet(scene.id)}
@@ -404,6 +447,31 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                     );
                   })}
                 </div>
+
+                {orderedSelectedScenes.length > 0 && (
+                  <div className="border-t border-slate-700 pt-3">
+                    <Label className="text-xs text-slate-500 mb-2 block">Shooting order (drag to reorder)</Label>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSceneDragEnd}>
+                      <SortableContext items={orderedSelectedScenes.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-1">
+                          {orderedSelectedScenes.map((scene, idx) => (
+                            <SortableRow key={scene.id} id={scene.id}>
+                              {({ handle }) => (
+                                <div className="flex items-center gap-2 bg-slate-700/40 rounded px-2 py-1.5 border border-slate-600">
+                                  {handle}
+                                  <span className="text-amber-500 font-mono text-xs w-6">{idx + 1}.</span>
+                                  <span className="text-white text-sm flex-1 truncate">
+                                    {scene.scene_number}. {scene.set_name || "Untitled"}
+                                  </span>
+                                </div>
+                              )}
+                            </SortableRow>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -9,6 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText, Save, Users } from "lucide-react";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableRow } from "./SortableRow";
 
 interface Scene {
   id: string;
@@ -160,6 +167,32 @@ export function SceneManager({ productionId }: SceneManagerProps) {
     return castMembers.filter(c => castIds.includes(c.id));
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = scenes.findIndex((s) => s.id === active.id);
+    const newIndex = scenes.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(scenes, oldIndex, newIndex).map((s, idx) => ({
+      ...s,
+      scene_number: String(idx + 1),
+    }));
+    setScenes(reordered);
+
+    await Promise.all(
+      reordered.map((s) =>
+        supabase.from("scenes").update({ scene_number: s.scene_number }).eq("id", s.id)
+      )
+    );
+    toast.success("Scenes reordered");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -193,118 +226,129 @@ export function SceneManager({ productionId }: SceneManagerProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {scenes.map((scene) => (
-            <Card key={scene.id} className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-4">
-                <div className="grid gap-4 md:grid-cols-12">
-                  <div className="md:col-span-1">
-                    <Label className="text-xs text-slate-500">Scene #</Label>
-                    <Input
-                      value={scene.scene_number}
-                      onChange={(e) => updateScene(scene.id, "scene_number", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white text-center font-bold"
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <Label className="text-xs text-slate-500">Set Name</Label>
-                    <Input
-                      value={scene.set_name || ""}
-                      onChange={(e) => updateScene(scene.id, "set_name", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
-                      placeholder="INT. DRUGSTORE"
-                    />
-                  </div>
-                  <div className="md:col-span-1">
-                    <Label className="text-xs text-slate-500">I/E</Label>
-                    <Select
-                      value={scene.int_ext || ""}
-                      onValueChange={(value) => updateScene(scene.id, "int_ext", value)}
-                    >
-                      <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
-                        <SelectItem value="INT">INT</SelectItem>
-                        <SelectItem value="EXT">EXT</SelectItem>
-                        <SelectItem value="I/E">I/E</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="md:col-span-1">
-                    <Label className="text-xs text-slate-500">D/N</Label>
-                    <Select
-                      value={scene.day_night || ""}
-                      onValueChange={(value) => updateScene(scene.id, "day_night", value)}
-                    >
-                      <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
-                        <SelectItem value="D">Day</SelectItem>
-                        <SelectItem value="N">Night</SelectItem>
-                        <SelectItem value="D/N">D/N</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="md:col-span-1">
-                    <Label className="text-xs text-slate-500">Pages</Label>
-                    <Input
-                      value={scene.page_count || ""}
-                      onChange={(e) => updateScene(scene.id, "page_count", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
-                      placeholder="2 1/8"
-                    />
-                  </div>
-                  <div className="md:col-span-4">
-                    <Label className="text-xs text-slate-500">Description</Label>
-                    <Input
-                      value={scene.description || ""}
-                      onChange={(e) => updateScene(scene.id, "description", e.target.value)}
-                      className="bg-slate-700/50 border-slate-600 text-white"
-                      placeholder="Scene description..."
-                    />
-                  </div>
-                  <div className="md:col-span-1 flex items-end gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => saveScene(scene)} className="text-slate-400 hover:text-green-400">
-                      <Save className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteScene(scene.id)} className="text-slate-400 hover:text-red-400">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={scenes.map(s => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+              {scenes.map((scene) => (
+                <SortableRow key={scene.id} id={scene.id}>
+                  {({ handle }) => (
+                    <Card className="bg-slate-800/50 border-slate-700">
+                      <CardContent className="p-4">
+                        <div className="grid gap-4 md:grid-cols-12 items-start">
+                          <div className="md:col-span-1 flex items-center gap-1">
+                            <span className="pt-6">{handle}</span>
+                            <div className="flex-1">
+                              <Label className="text-xs text-slate-500">Scene #</Label>
+                              <Input
+                                value={scene.scene_number}
+                                onChange={(e) => updateScene(scene.id, "scene_number", e.target.value)}
+                                className="bg-slate-700/50 border-slate-600 text-white text-center font-bold"
+                              />
+                            </div>
+                          </div>
+                          <div className="md:col-span-3">
+                            <Label className="text-xs text-slate-500">Set Name</Label>
+                            <Input
+                              value={scene.set_name || ""}
+                              onChange={(e) => updateScene(scene.id, "set_name", e.target.value)}
+                              className="bg-slate-700/50 border-slate-600 text-white"
+                              placeholder="INT. DRUGSTORE"
+                            />
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="text-xs text-slate-500">I/E</Label>
+                            <Select
+                              value={scene.int_ext || ""}
+                              onValueChange={(value) => updateScene(scene.id, "int_ext", value)}
+                            >
+                              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-800 border-slate-700">
+                                <SelectItem value="INT">INT</SelectItem>
+                                <SelectItem value="EXT">EXT</SelectItem>
+                                <SelectItem value="I/E">I/E</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="text-xs text-slate-500">D/N</Label>
+                            <Select
+                              value={scene.day_night || ""}
+                              onValueChange={(value) => updateScene(scene.id, "day_night", value)}
+                            >
+                              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-800 border-slate-700">
+                                <SelectItem value="D">Day</SelectItem>
+                                <SelectItem value="N">Night</SelectItem>
+                                <SelectItem value="D/N">D/N</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="text-xs text-slate-500">Pages</Label>
+                            <Input
+                              value={scene.page_count || ""}
+                              onChange={(e) => updateScene(scene.id, "page_count", e.target.value)}
+                              className="bg-slate-700/50 border-slate-600 text-white"
+                              placeholder="2 1/8"
+                            />
+                          </div>
+                          <div className="md:col-span-4">
+                            <Label className="text-xs text-slate-500">Description</Label>
+                            <Input
+                              value={scene.description || ""}
+                              onChange={(e) => updateScene(scene.id, "description", e.target.value)}
+                              className="bg-slate-700/50 border-slate-600 text-white"
+                              placeholder="Scene description..."
+                            />
+                          </div>
+                          <div className="md:col-span-1 flex items-end gap-1 pt-5">
+                            <Button size="sm" variant="ghost" onClick={() => saveScene(scene)} className="text-slate-400 hover:text-green-400">
+                              <Save className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => deleteScene(scene.id)} className="text-slate-400 hover:text-red-400">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
 
-                {/* Cast in scene */}
-                <div className="mt-4 pt-4 border-t border-slate-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-slate-500" />
-                    <Label className="text-xs text-slate-500">Cast in Scene</Label>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {castMembers.map((cast) => {
-                      const isInScene = sceneCast.some(sc => sc.scene_id === scene.id && sc.cast_member_id === cast.id);
-                      return (
-                        <Badge
-                          key={cast.id}
-                          variant={isInScene ? "default" : "outline"}
-                          className={`cursor-pointer ${
-                            isInScene 
-                              ? "bg-amber-600 hover:bg-amber-700 text-white" 
-                              : "border-slate-600 text-slate-400 hover:bg-slate-700"
-                          }`}
-                          onClick={() => toggleCastInScene(scene.id, cast.id)}
-                        >
-                          {cast.cast_id}. {cast.character_name}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                        {/* Cast in scene */}
+                        <div className="mt-4 pt-4 border-t border-slate-700">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Users className="w-4 h-4 text-slate-500" />
+                            <Label className="text-xs text-slate-500">Cast in Scene</Label>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {castMembers.map((cast) => {
+                              const isInScene = sceneCast.some(sc => sc.scene_id === scene.id && sc.cast_member_id === cast.id);
+                              return (
+                                <Badge
+                                  key={cast.id}
+                                  variant={isInScene ? "default" : "outline"}
+                                  className={`cursor-pointer ${
+                                    isInScene
+                                      ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                      : "border-slate-600 text-slate-400 hover:bg-slate-700"
+                                  }`}
+                                  onClick={() => toggleCastInScene(scene.id, cast.id)}
+                                >
+                                  {cast.cast_id}. {cast.character_name}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </SortableRow>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
