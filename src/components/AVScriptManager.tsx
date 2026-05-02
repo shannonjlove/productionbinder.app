@@ -597,82 +597,140 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-slate-700 hover:bg-transparent">
-                          <TableHead className="w-8 text-slate-400"></TableHead>
-                          <TableHead className="w-32 text-slate-400">Segment</TableHead>
-                          <TableHead className="text-slate-400">Visual</TableHead>
-                          <TableHead className="text-slate-400">Audio</TableHead>
-                          <TableHead className="w-20 text-slate-400">Duration</TableHead>
-                          <TableHead className="w-12 text-slate-400"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
-                          {entries.map((entry) => {
-                            const wordCount = countWords(entry.audio);
-                            const duration = calculateDuration(wordCount);
-
-                            return (
-                              <SortableRow key={entry.id} id={entry.id} asTableRow className="border-b border-slate-700 hover:bg-slate-700/30">
-                                {({ handle }) => (
-                                  <>
-                                    <TableCell>{handle}</TableCell>
-                                    <TableCell>
-                                      <Input
-                                        value={entry.segment || ""}
-                                        onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
-                                        placeholder="Segment..."
-                                        className="bg-transparent border-slate-600 text-white text-sm"
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Textarea
-                                        value={entry.visual || ""}
-                                        onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
-                                        placeholder="Visual description..."
-                                        className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Textarea
-                                        value={entry.audio || ""}
-                                        onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
-                                        placeholder="Audio/narration..."
-                                        className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
-                                      />
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <span className="text-sm font-mono text-amber-500">{duration}</span>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => deleteEntry(entry.id)}
-                                        className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    </TableCell>
-                                  </>
-                                )}
-                              </SortableRow>
-                            );
-                          })}
-                        </SortableContext>
-                        {entries.length === 0 && (
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                              No entries yet. Click "Add Row" to start building your script.
-                            </TableCell>
+                  {viewMode === "table" ? (
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-slate-700 hover:bg-transparent">
+                            <TableHead className="w-8 text-slate-400"></TableHead>
+                            <TableHead className="w-32 text-slate-400">Segment</TableHead>
+                            <TableHead className="text-slate-400">Visual</TableHead>
+                            <TableHead className="text-slate-400">Audio</TableHead>
+                            <TableHead className="w-20 text-slate-400">Duration</TableHead>
+                            <TableHead className="w-12 text-slate-400"></TableHead>
                           </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
+                            {entries.map((entry) => {
+                              const wordCount = countWords(entry.audio);
+                              const duration = calculateDuration(wordCount);
+
+                              return (
+                                <SortableRow key={entry.id} id={entry.id} asTableRow className="border-b border-slate-700 hover:bg-slate-700/30">
+                                  {({ handle }) => (
+                                    <>
+                                      <TableCell>{handle}</TableCell>
+                                      <TableCell>
+                                        <Input
+                                          value={entry.segment || ""}
+                                          onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
+                                          placeholder="Segment..."
+                                          className="bg-transparent border-slate-600 text-white text-sm"
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Textarea
+                                          value={entry.visual || ""}
+                                          onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
+                                          placeholder="Visual description..."
+                                          className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Textarea
+                                          value={entry.audio || ""}
+                                          onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
+                                          placeholder="Audio/narration..."
+                                          className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <span className="text-sm font-mono text-amber-500">{duration}</span>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => deleteEntry(entry.id)}
+                                          className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      </TableCell>
+                                    </>
+                                  )}
+                                </SortableRow>
+                              );
+                            })}
+                          </SortableContext>
+                          {entries.length === 0 && (
+                            <TableRow className="hover:bg-transparent">
+                              <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                                No entries yet. Click "Add Row" to start building your script.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </DndContext>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[640px]">
+                        <div className="grid grid-cols-[40px_repeat(4,minmax(0,1fr))_60px] bg-slate-900/60 border-b border-slate-700 text-xs font-medium text-slate-400 uppercase tracking-wide">
+                          <div className="p-2 text-center">#</div>
+                          {COLS.map(c => (
+                            <div key={c.key} className="p-2 border-l border-slate-700">{c.label}</div>
+                          ))}
+                          <div className="p-2 border-l border-slate-700"></div>
+                        </div>
+                        {entries.map((entry, rIdx) => (
+                          <div key={entry.id} className="grid grid-cols-[40px_repeat(4,minmax(0,1fr))_60px] border-b border-slate-700 hover:bg-slate-700/20">
+                            <div className="p-2 text-center text-xs text-slate-500 flex items-center justify-center">{rIdx + 1}</div>
+                            {COLS.map((c, cIdx) => {
+                              const isActive = activeCell?.row === rIdx && activeCell?.col === cIdx;
+                              return (
+                                <div
+                                  key={c.key}
+                                  className={`border-l border-slate-700 ${isActive ? "ring-2 ring-amber-500 ring-inset" : ""}`}
+                                  onClick={() => setActiveCell({ row: rIdx, col: cIdx })}
+                                >
+                                  <textarea
+                                    value={(entry[c.key] as string) || ""}
+                                    onChange={(e) => updateEntry(entry.id, c.key, e.target.value)}
+                                    onFocus={() => setActiveCell({ row: rIdx, col: cIdx })}
+                                    placeholder={c.label}
+                                    rows={2}
+                                    className="w-full h-full p-2 bg-transparent text-sm text-white placeholder:text-slate-600 focus:outline-none resize-none"
+                                  />
+                                </div>
+                              );
+                            })}
+                            <div className="border-l border-slate-700 flex items-center justify-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteEntry(entry.id)}
+                                className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {entries.length === 0 && (
+                          <div className="text-center text-slate-500 py-8 text-sm">
+                            No entries yet. Click "Add Row" to start building your script.
+                          </div>
                         )}
-                      </TableBody>
-                    </Table>
-                  </DndContext>
+                        <div className="p-2 border-t border-slate-700">
+                          <Button onClick={addEntry} variant="ghost" size="sm" className="w-full text-slate-400 hover:text-amber-400">
+                            <Plus className="w-4 h-4 mr-2" /> Add Row
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </>
             ) : (
