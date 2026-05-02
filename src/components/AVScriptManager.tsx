@@ -67,6 +67,17 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   const [newScriptName, setNewScriptName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pacing, setPacing] = useState<PacingType>("medium");
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [versions, setVersions] = useState<Array<{ id: string; version_number: number; label: string | null; snapshot: any; created_at: string }>>([]);
+  const [versionLabel, setVersionLabel] = useState("");
+  const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
+
+  const COLS: Array<{ key: keyof AVScriptEntry; label: string }> = [
+    { key: "segment", label: "Segment" },
+    { key: "visual", label: "Visual" },
+    { key: "audio", label: "Audio" },
+    { key: "notes", label: "Notes" },
+  ];
 
   useEffect(() => {
     fetchScripts();
