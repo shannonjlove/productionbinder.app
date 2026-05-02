@@ -564,20 +564,37 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                                 <Save className="w-4 h-4" />
                               </Button>
                             </div>
-                            <div className="max-h-64 overflow-y-auto space-y-1">
+                            <div className="max-h-72 overflow-y-auto -mx-1 px-1">
                               {versions.length === 0 ? (
-                                <p className="text-xs text-slate-400 text-center py-4">No saved versions yet</p>
-                              ) : versions.map(v => (
-                                <div key={v.id} className="flex items-center justify-between p-2 rounded bg-slate-700/40">
-                                  <div className="text-sm">
-                                    <div className="font-medium">v{v.version_number} {v.label && `· ${v.label}`}</div>
-                                    <div className="text-xs text-slate-400">{new Date(v.created_at).toLocaleString()}</div>
-                                  </div>
-                                  <Button size="sm" variant="ghost" onClick={() => restoreVersion(v.snapshot)} className="text-slate-300 hover:text-amber-400">
-                                    <RotateCcw className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              ))}
+                                <p className="text-xs text-slate-400 text-center py-6">No saved versions yet. Save one above to start tracking history.</p>
+                              ) : (
+                                <ul className="divide-y divide-slate-700/60">
+                                  {versions.map(v => {
+                                    const segCount = Array.isArray(v.snapshot) ? v.snapshot.length : 0;
+                                    return (
+                                      <li key={v.id} className="py-2 flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-baseline gap-2">
+                                            <span className="text-sm font-semibold text-amber-400">v{v.version_number}</span>
+                                            <span className="text-sm text-white truncate">{v.label || "Untitled"}</span>
+                                          </div>
+                                          <div className="text-[11px] text-slate-400 mt-0.5">
+                                            {new Date(v.created_at).toLocaleString()} · {segCount} segment{segCount === 1 ? "" : "s"}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <Button size="sm" variant="ghost" title="Preview" onClick={() => setPreviewVersion(v)} className="h-7 w-7 p-0 text-slate-300 hover:text-amber-400">
+                                            <Eye className="w-3.5 h-3.5" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" title="Restore" onClick={() => restoreVersion(v.snapshot)} className="h-7 w-7 p-0 text-slate-300 hover:text-amber-400">
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
                             </div>
                           </div>
                         </PopoverContent>
