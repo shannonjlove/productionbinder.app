@@ -61,6 +61,33 @@ export type Database = {
           },
         ]
       }
+      av_script_versions: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          script_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          script_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          script_id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: []
+      }
       av_scripts: {
         Row: {
           created_at: string
