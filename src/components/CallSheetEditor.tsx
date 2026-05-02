@@ -8,10 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Send, Clock, Users, FileText, MapPin, UserCheck, Bell } from "lucide-react";
+import { ArrowLeft, Save, Send, Clock, Users, FileText, MapPin, UserCheck, Bell, GripVertical } from "lucide-react";
 import { CrewCheckIn } from "@/components/CrewCheckIn";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { NotificationToggle } from "@/components/NotificationBanner";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableRow } from "@/components/SortableRow";
 interface ShootDay {
   id: string;
   day_number: number;
@@ -239,6 +246,42 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
     } finally {
       setPublishing(false);
     }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const orderedSelectedScenes = [...callSheetScenes]
+    .sort((a, b) => a.scene_order - b.scene_order)
+    .map(cs => scenes.find(s => s.id === cs.scene_id))
+    .filter((s): s is Scene => !!s);
+
+  const handleSceneDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedSelectedScenes.findIndex(s => s.id === active.id);
+    const newIndex = orderedSelectedScenes.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(orderedSelectedScenes, oldIndex, newIndex);
+    const newCallSheetScenes = reordered.map((scene, idx) => {
+      const existing = callSheetScenes.find(cs => cs.scene_id === scene.id)!;
+      return { ...existing, scene_order: idx };
+    });
+    // Keep any entries that don't match (shouldn't happen) at end
+    setCallSheetScenes(newCallSheetScenes);
+
+    await Promise.all(
+      newCallSheetScenes.map(cs =>
+        supabase
+          .from("call_sheet_scenes")
+          .update({ scene_order: cs.scene_order })
+          .eq("call_sheet_id", callSheet.id)
+          .eq("scene_id", cs.scene_id)
+      )
+    );
   };
 
   const selectedScenes = scenes.filter(s => callSheetScenes.some(cs => cs.scene_id === s.id));
