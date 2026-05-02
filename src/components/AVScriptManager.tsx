@@ -514,7 +514,25 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                         <span>{entries.length} segments</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex rounded-md border border-slate-600 overflow-hidden">
+                        <Button
+                          size="sm"
+                          variant={viewMode === "table" ? "default" : "ghost"}
+                          onClick={() => setViewMode("table")}
+                          className={viewMode === "table" ? "bg-amber-600 hover:bg-amber-700 rounded-none" : "rounded-none text-slate-300"}
+                        >
+                          <Table2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={viewMode === "grid" ? "default" : "ghost"}
+                          onClick={() => setViewMode("grid")}
+                          className={viewMode === "grid" ? "bg-amber-600 hover:bg-amber-700 rounded-none" : "rounded-none text-slate-300"}
+                        >
+                          <Grid3x3 className="w-4 h-4" />
+                        </Button>
+                      </div>
                       <Select value={pacing} onValueChange={(v: PacingType) => setPacing(v)}>
                         <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600 text-white">
                           <SelectValue />
@@ -525,9 +543,51 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                           <SelectItem value="fast">Fast (180 wpm)</SelectItem>
                         </SelectContent>
                       </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="border-slate-600 text-slate-300">
+                            <History className="w-4 h-4 mr-2" />
+                            Versions ({versions.length})
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-slate-800 border-slate-700 text-white">
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Version label (optional)"
+                                value={versionLabel}
+                                onChange={(e) => setVersionLabel(e.target.value)}
+                                className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                              />
+                              <Button size="sm" onClick={saveVersion} className="bg-amber-600 hover:bg-amber-700">
+                                <Save className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <div className="max-h-64 overflow-y-auto space-y-1">
+                              {versions.length === 0 ? (
+                                <p className="text-xs text-slate-400 text-center py-4">No saved versions yet</p>
+                              ) : versions.map(v => (
+                                <div key={v.id} className="flex items-center justify-between p-2 rounded bg-slate-700/40">
+                                  <div className="text-sm">
+                                    <div className="font-medium">v{v.version_number} {v.label && `· ${v.label}`}</div>
+                                    <div className="text-xs text-slate-400">{new Date(v.created_at).toLocaleString()}</div>
+                                  </div>
+                                  <Button size="sm" variant="ghost" onClick={() => restoreVersion(v.snapshot)} className="text-slate-300 hover:text-amber-400">
+                                    <RotateCcw className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <Button variant="outline" onClick={exportToCSV} className="border-slate-600 text-slate-300">
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        CSV
+                      </Button>
                       <Button variant="outline" onClick={exportToPDF} className="border-slate-600 text-slate-300">
                         <Download className="w-4 h-4 mr-2" />
-                        Export PDF
+                        PDF
                       </Button>
                       <Button onClick={addEntry} className="bg-amber-600 hover:bg-amber-700">
                         <Plus className="w-4 h-4 mr-2" />
