@@ -194,7 +194,7 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
 
     const { error } = await supabase
       .from("call_sheet_cast")
-      .update({ [field]: value })
+      .update({ [field]: value } as any)
       .eq("id", existing.id);
 
     if (!error) {
