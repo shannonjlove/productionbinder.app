@@ -1,7 +1,1 @@
 project_id = "uqinkqqxuhcwgumhvzoj"
-
-[functions.get-weather]
-verify_jwt = false
-
-[functions.send-call-sheet-notification]
-verify_jwt = false
