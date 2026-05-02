@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, FileText, Clock, Download, History, Grid3x3, Table2, RotateCcw, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Save, FileText, Clock, Download, History, Grid3x3, Table2, RotateCcw, FileSpreadsheet, Eye } from "lucide-react";
 import jsPDF from "jspdf";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -69,6 +69,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
   const [pacing, setPacing] = useState<PacingType>("medium");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [versions, setVersions] = useState<Array<{ id: string; version_number: number; label: string | null; snapshot: any; created_at: string }>>([]);
+  const [previewVersion, setPreviewVersion] = useState<{ id: string; version_number: number; label: string | null; snapshot: any; created_at: string } | null>(null);
   const [versionLabel, setVersionLabel] = useState("");
   const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
 
@@ -563,20 +564,37 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                                 <Save className="w-4 h-4" />
                               </Button>
                             </div>
-                            <div className="max-h-64 overflow-y-auto space-y-1">
+                            <div className="max-h-72 overflow-y-auto -mx-1 px-1">
                               {versions.length === 0 ? (
-                                <p className="text-xs text-slate-400 text-center py-4">No saved versions yet</p>
-                              ) : versions.map(v => (
-                                <div key={v.id} className="flex items-center justify-between p-2 rounded bg-slate-700/40">
-                                  <div className="text-sm">
-                                    <div className="font-medium">v{v.version_number} {v.label && `· ${v.label}`}</div>
-                                    <div className="text-xs text-slate-400">{new Date(v.created_at).toLocaleString()}</div>
-                                  </div>
-                                  <Button size="sm" variant="ghost" onClick={() => restoreVersion(v.snapshot)} className="text-slate-300 hover:text-amber-400">
-                                    <RotateCcw className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              ))}
+                                <p className="text-xs text-slate-400 text-center py-6">No saved versions yet. Save one above to start tracking history.</p>
+                              ) : (
+                                <ul className="divide-y divide-slate-700/60">
+                                  {versions.map(v => {
+                                    const segCount = Array.isArray(v.snapshot) ? v.snapshot.length : 0;
+                                    return (
+                                      <li key={v.id} className="py-2 flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-baseline gap-2">
+                                            <span className="text-sm font-semibold text-amber-400">v{v.version_number}</span>
+                                            <span className="text-sm text-white truncate">{v.label || "Untitled"}</span>
+                                          </div>
+                                          <div className="text-[11px] text-slate-400 mt-0.5">
+                                            {new Date(v.created_at).toLocaleString()} · {segCount} segment{segCount === 1 ? "" : "s"}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <Button size="sm" variant="ghost" title="Preview" onClick={() => setPreviewVersion(v)} className="h-7 w-7 p-0 text-slate-300 hover:text-amber-400">
+                                            <Eye className="w-3.5 h-3.5" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" title="Restore" onClick={() => restoreVersion(v.snapshot)} className="h-7 w-7 p-0 text-slate-300 hover:text-amber-400">
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
                             </div>
                           </div>
                         </PopoverContent>
@@ -741,6 +759,59 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
           </Card>
         </div>
       )}
+
+      <Dialog open={!!previewVersion} onOpenChange={(open) => !open && setPreviewVersion(null)}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Preview · v{previewVersion?.version_number} {previewVersion?.label && `· ${previewVersion.label}`}
+            </DialogTitle>
+            <p className="text-xs text-slate-400">
+              {previewVersion && new Date(previewVersion.created_at).toLocaleString()}
+              {Array.isArray(previewVersion?.snapshot) && ` · ${previewVersion!.snapshot.length} segments`}
+            </p>
+          </DialogHeader>
+          <div className="overflow-auto flex-1 -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-700 hover:bg-transparent">
+                  <TableHead className="w-12 text-slate-400">#</TableHead>
+                  <TableHead className="w-32 text-slate-400">Segment</TableHead>
+                  <TableHead className="text-slate-400">Visual</TableHead>
+                  <TableHead className="text-slate-400">Audio</TableHead>
+                  <TableHead className="text-slate-400">Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(previewVersion?.snapshot) && previewVersion!.snapshot.map((e: any, i: number) => (
+                  <TableRow key={i} className="border-slate-700 hover:bg-slate-700/30 align-top">
+                    <TableCell className="text-slate-500 text-xs">{i + 1}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap">{e.segment || ""}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap">{e.visual || ""}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap">{e.audio || ""}</TableCell>
+                    <TableCell className="text-sm whitespace-pre-wrap text-slate-400">{e.notes || ""}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
+            <Button variant="outline" onClick={() => setPreviewVersion(null)} className="border-slate-600 text-slate-300">
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                const v = previewVersion;
+                setPreviewVersion(null);
+                if (v) restoreVersion(v.snapshot);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" /> Restore this version
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
