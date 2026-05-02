@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +33,37 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require authenticated caller
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(
+    authHeader.replace("Bearer ", ""),
+  );
+  if (claimsError || !claimsData?.claims) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const esc = (s: unknown): string =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
   try {
     const request: NotificationRequest = await req.json();
     const { callSheet, recipient, recipients, method, batch } = request;
@@ -60,16 +92,16 @@ serve(async (req) => {
 
           try {
             const locationInfo = callSheet.locations?.length 
-              ? callSheet.locations.map(l => `${l.name}: ${l.address}`).join("\n")
+              ? callSheet.locations.map(l => `${esc(l.name)}: ${esc(l.address)}`).join("<br>")
               : "TBD";
 
             const emailHtml = `
-              <h1>Call Sheet: ${callSheet.productionName}</h1>
-              <p>Hi ${r.name},</p>
-              <p><strong>Date:</strong> ${callSheet.shootDate}</p>
-              <p><strong>Call Time:</strong> ${callSheet.generalCallTime}</p>
+              <h1>Call Sheet: ${esc(callSheet.productionName)}</h1>
+              <p>Hi ${esc(r.name)},</p>
+              <p><strong>Date:</strong> ${esc(callSheet.shootDate)}</p>
+              <p><strong>Call Time:</strong> ${esc(callSheet.generalCallTime)}</p>
               <p><strong>Location:</strong> ${locationInfo}</p>
-              ${callSheet.specialInstructions ? `<p><strong>Notes:</strong> ${callSheet.specialInstructions}</p>` : ""}
+              ${callSheet.specialInstructions ? `<p><strong>Notes:</strong> ${esc(callSheet.specialInstructions)}</p>` : ""}
             `;
 
             const response = await fetch("https://api.resend.com/emails", {
