@@ -12,7 +12,7 @@ export const StudioTimer = () => {
   const [mode, setMode] = useState<"countdown" | "stopwatch">("countdown");
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (isRunning) {
       interval = setInterval(() => {

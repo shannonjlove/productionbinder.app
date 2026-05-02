@@ -191,7 +191,7 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
 
     const { error } = await supabase
       .from("av_script_entries")
-      .update({ [field]: value })
+      .update({ [field]: value } as any)
       .eq("id", id);
 
     if (error) {
