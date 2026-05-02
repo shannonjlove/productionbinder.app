@@ -478,7 +478,7 @@ export type Database = {
       }
       notification_log: {
         Row: {
-          call_sheet_id: string | null
+          call_sheet_id: string
           channel: string
           created_at: string
           delivered_at: string | null
@@ -492,7 +492,7 @@ export type Database = {
           status: string
         }
         Insert: {
-          call_sheet_id?: string | null
+          call_sheet_id: string
           channel: string
           created_at?: string
           delivered_at?: string | null
@@ -506,7 +506,7 @@ export type Database = {
           status?: string
         }
         Update: {
-          call_sheet_id?: string | null
+          call_sheet_id?: string
           channel?: string
           created_at?: string
           delivered_at?: string | null
