@@ -830,6 +830,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_production_member: {
+        Args: { _production_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "producer" | "coordinator" | "crew"
