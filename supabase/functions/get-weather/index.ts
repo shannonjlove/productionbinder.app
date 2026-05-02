@@ -55,7 +55,7 @@ serve(async (req) => {
     if (!apiKey) {
       console.error("OpenWeatherMap API key not configured");
       return new Response(
-        JSON.stringify({ error: "Weather service not configured. Please add OPENWEATHERMAP_API_KEY." }),
+        JSON.stringify({ error: "Weather service unavailable" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
