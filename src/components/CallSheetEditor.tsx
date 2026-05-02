@@ -427,8 +427,8 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                   Scenes ({selectedScenes.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
                   {scenes.map((scene) => {
                     const isSelected = callSheetScenes.some(cs => cs.scene_id === scene.id);
                     return (
@@ -436,8 +436,8 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                         key={scene.id}
                         variant={isSelected ? "default" : "outline"}
                         className={`cursor-pointer ${
-                          isSelected 
-                            ? "bg-amber-600 hover:bg-amber-700 text-white" 
+                          isSelected
+                            ? "bg-amber-600 hover:bg-amber-700 text-white"
                             : "border-slate-600 text-slate-400 hover:bg-slate-700"
                         }`}
                         onClick={() => toggleSceneInCallSheet(scene.id)}
@@ -447,6 +447,31 @@ export function CallSheetEditor({ callSheet: initialCallSheet, shootDay, product
                     );
                   })}
                 </div>
+
+                {orderedSelectedScenes.length > 0 && (
+                  <div className="border-t border-slate-700 pt-3">
+                    <Label className="text-xs text-slate-500 mb-2 block">Shooting order (drag to reorder)</Label>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSceneDragEnd}>
+                      <SortableContext items={orderedSelectedScenes.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-1">
+                          {orderedSelectedScenes.map((scene, idx) => (
+                            <SortableRow key={scene.id} id={scene.id}>
+                              {({ handle }) => (
+                                <div className="flex items-center gap-2 bg-slate-700/40 rounded px-2 py-1.5 border border-slate-600">
+                                  {handle}
+                                  <span className="text-amber-500 font-mono text-xs w-6">{idx + 1}.</span>
+                                  <span className="text-white text-sm flex-1 truncate">
+                                    {scene.scene_number}. {scene.set_name || "Untitled"}
+                                  </span>
+                                </div>
+                              )}
+                            </SortableRow>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
