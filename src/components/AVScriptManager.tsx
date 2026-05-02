@@ -8,8 +8,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, FileText, Clock, GripVertical, Download } from "lucide-react";
+import { Plus, Trash2, Save, FileText, Clock, Download } from "lucide-react";
 import jsPDF from "jspdf";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableRow } from "./SortableRow";
 
 interface AVScript {
   id: string;
@@ -184,6 +200,32 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
       // Revert on error
       fetchEntries(selectedScript!.id);
     }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = entries.findIndex((e) => e.id === active.id);
+    const newIndex = entries.findIndex((e) => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(entries, oldIndex, newIndex).map((e, idx) => ({
+      ...e,
+      sort_order: idx,
+    }));
+    setEntries(reordered);
+
+    await Promise.all(
+      reordered.map((e) =>
+        supabase.from("av_script_entries").update({ sort_order: e.sort_order }).eq("id", e.id)
+      )
+    );
   };
 
   const deleteEntry = async (id: string) => {
@@ -416,76 +458,82 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-700 hover:bg-transparent">
-                        <TableHead className="w-8 text-slate-400"></TableHead>
-                        <TableHead className="w-32 text-slate-400">Segment</TableHead>
-                        <TableHead className="text-slate-400">Visual</TableHead>
-                        <TableHead className="text-slate-400">Audio</TableHead>
-                        <TableHead className="w-20 text-slate-400">Duration</TableHead>
-                        <TableHead className="w-12 text-slate-400"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entries.map((entry) => {
-                        const wordCount = countWords(entry.audio);
-                        const duration = calculateDuration(wordCount);
-                        
-                        return (
-                          <TableRow key={entry.id} className="border-slate-700 hover:bg-slate-700/30">
-                            <TableCell className="text-slate-500">
-                              <GripVertical className="w-4 h-4" />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                value={entry.segment || ""}
-                                onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
-                                placeholder="Segment..."
-                                className="bg-transparent border-slate-600 text-white text-sm"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Textarea
-                                value={entry.visual || ""}
-                                onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
-                                placeholder="Visual description..."
-                                className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Textarea
-                                value={entry.audio || ""}
-                                onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
-                                placeholder="Audio/narration..."
-                                className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
-                              />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="text-sm font-mono text-amber-500">{duration}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteEntry(entry.id)}
-                                className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700 hover:bg-transparent">
+                          <TableHead className="w-8 text-slate-400"></TableHead>
+                          <TableHead className="w-32 text-slate-400">Segment</TableHead>
+                          <TableHead className="text-slate-400">Visual</TableHead>
+                          <TableHead className="text-slate-400">Audio</TableHead>
+                          <TableHead className="w-20 text-slate-400">Duration</TableHead>
+                          <TableHead className="w-12 text-slate-400"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
+                          {entries.map((entry) => {
+                            const wordCount = countWords(entry.audio);
+                            const duration = calculateDuration(wordCount);
+
+                            return (
+                              <SortableRow key={entry.id} id={entry.id} asTableRow className="border-b border-slate-700 hover:bg-slate-700/30">
+                                {({ handle }) => (
+                                  <>
+                                    <TableCell>{handle}</TableCell>
+                                    <TableCell>
+                                      <Input
+                                        value={entry.segment || ""}
+                                        onChange={(e) => updateEntry(entry.id, "segment", e.target.value)}
+                                        placeholder="Segment..."
+                                        className="bg-transparent border-slate-600 text-white text-sm"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Textarea
+                                        value={entry.visual || ""}
+                                        onChange={(e) => updateEntry(entry.id, "visual", e.target.value)}
+                                        placeholder="Visual description..."
+                                        className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Textarea
+                                        value={entry.audio || ""}
+                                        onChange={(e) => updateEntry(entry.id, "audio", e.target.value)}
+                                        placeholder="Audio/narration..."
+                                        className="bg-transparent border-slate-600 text-white text-sm min-h-[60px] resize-none"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <span className="text-sm font-mono text-amber-500">{duration}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => deleteEntry(entry.id)}
+                                        className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    </TableCell>
+                                  </>
+                                )}
+                              </SortableRow>
+                            );
+                          })}
+                        </SortableContext>
+                        {entries.length === 0 && (
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                              No entries yet. Click "Add Row" to start building your script.
                             </TableCell>
                           </TableRow>
-                        );
-                      })}
-                      {entries.length === 0 && (
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell colSpan={6} className="text-center text-slate-500 py-8">
-                            No entries yet. Click "Add Row" to start building your script.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </DndContext>
                 </CardContent>
               </>
             ) : (
