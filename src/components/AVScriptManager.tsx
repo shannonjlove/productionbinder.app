@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, FileText, Clock, Download, History, Grid3x3, Table2, RotateCcw, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Save, FileText, Clock, Download, History, Grid3x3, Table2, RotateCcw, FileSpreadsheet, Eye } from "lucide-react";
 import jsPDF from "jspdf";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
