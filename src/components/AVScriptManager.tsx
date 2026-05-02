@@ -162,11 +162,6 @@ export function AVScriptManager({ productionId }: AVScriptManagerProps) {
       .select("*")
       .eq("production_id", productionId)
       .order("created_at", { ascending: false });
-    const { data, error } = await supabase
-      .from("av_scripts")
-      .select("*")
-      .eq("production_id", productionId)
-      .order("created_at", { ascending: false });
 
     if (error) {
       toast.error("Failed to load scripts");
