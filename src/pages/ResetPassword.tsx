@@ -96,6 +96,7 @@ export default function ResetPassword() {
     if (error) {
       toast.error(error.message);
     } else {
+      logSignInEvent("password_reset_complete", { email: resendEmail });
       toast.success("Password updated successfully");
       await supabase.auth.signOut();
       setStatus("success");
