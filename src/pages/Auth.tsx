@@ -68,15 +68,17 @@ export default function Auth() {
     }
     
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
+      logSignInEvent("sign_in_failed", { email, metadata: { reason: error.message } });
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Invalid email or password");
       } else {
         toast.error(error.message);
       }
     } else {
+      logSignInEvent("sign_in", { email, user_id: data.user?.id });
       toast.success("Welcome back!");
     }
     setLoading(false);
