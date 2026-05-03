@@ -167,6 +167,15 @@ export default function Auth() {
                     className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { setResetEmail(email); setForgotOpen(true); }}
+                    className="text-xs text-amber-700 hover:text-amber-800 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <Button 
                   type="submit" 
                   disabled={loading}
