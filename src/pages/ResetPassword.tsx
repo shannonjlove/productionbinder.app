@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Clapperboard, AlertTriangle } from "lucide-react";
+import { Clapperboard, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
 
-type Status = "validating" | "ready" | "invalid" | "authenticated";
+type Status = "validating" | "ready" | "invalid" | "authenticated" | "success";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -96,7 +96,9 @@ export default function ResetPassword() {
       toast.error(error.message);
     } else {
       toast.success("Password updated successfully");
-      navigate("/");
+      await supabase.auth.signOut();
+      setStatus("success");
+      setTimeout(() => navigate("/auth"), 3000);
     }
   };
 
@@ -126,6 +128,8 @@ export default function ResetPassword() {
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/25">
             {status === "invalid" ? (
               <AlertTriangle className="w-8 h-8 text-white" />
+            ) : status === "success" ? (
+              <CheckCircle2 className="w-8 h-8 text-white" />
             ) : (
               <Clapperboard className="w-8 h-8 text-white" />
             )}
@@ -136,6 +140,8 @@ export default function ResetPassword() {
                 ? "Reset link invalid or expired"
                 : status === "authenticated"
                 ? "You're already signed in"
+                : status === "success"
+                ? "Password reset successful"
                 : "Set a new password"}
             </CardTitle>
             <CardDescription className="text-slate-600">
@@ -143,6 +149,7 @@ export default function ResetPassword() {
               {status === "ready" && "Enter and confirm your new password"}
               {status === "invalid" && "Request a new reset link below"}
               {status === "authenticated" && "Return to your dashboard"}
+              {status === "success" && "Your password has been updated. Redirecting you to sign in..."}
             </CardDescription>
           </div>
         </CardHeader>
@@ -235,6 +242,20 @@ export default function ResetPassword() {
 
           {status === "validating" && (
             <div className="text-center text-sm text-slate-500 py-4">Please wait…</div>
+          )}
+
+          {status === "success" && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                Your password has been updated successfully. You can now sign in with your new password.
+              </div>
+              <Button
+                onClick={() => navigate("/auth")}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg shadow-amber-500/25"
+              >
+                Continue to sign in
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
