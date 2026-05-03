@@ -39,7 +39,12 @@ export default function Admin() {
 
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [signIns, setSignIns] = useState<SignInRow[]>([]);
+  const [debugEvents, setDebugEvents] = useState<DebugRow[]>([]);
   const [filter, setFilter] = useState("");
+  const [signInFilter, setSignInFilter] = useState("");
+  const [debugFilter, setDebugFilter] = useState("");
+  const [debugLevel, setDebugLevel] = useState<string>("all");
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "producer" | "crew">("admin");
 
@@ -48,10 +53,12 @@ export default function Admin() {
   }, [authLoading, user, navigate]);
 
   const loadData = async () => {
-    const [{ data: r }, { data: a }, { data: profiles }] = await Promise.all([
+    const [{ data: r }, { data: a }, { data: profiles }, { data: si }, { data: de }] = await Promise.all([
       supabase.from("user_roles").select("*").order("role"),
       supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("user_id, email, full_name"),
+      supabase.from("sign_in_log").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("debug_events").select("*").order("created_at", { ascending: false }).limit(300),
     ]);
     const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
     setRoles((r || []).map((row: any) => ({
@@ -60,6 +67,8 @@ export default function Admin() {
       full_name: profileMap.get(row.user_id)?.full_name,
     })));
     setAudit((a as AuditRow[]) || []);
+    setSignIns((si as SignInRow[]) || []);
+    setDebugEvents((de as DebugRow[]) || []);
   };
 
   useEffect(() => {
