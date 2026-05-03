@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { Film, Clapperboard } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
+import { logSignInEvent } from "@/lib/debugLogger";
 
 export default function Auth() {
   const navigate = useNavigate();
