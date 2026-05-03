@@ -37,6 +37,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       try { localStorage.setItem("last_reset_email", resetEmail); } catch {}
+      logSignInEvent("password_reset_request", { email: resetEmail });
       toast.success("Password reset link sent. Check your email.");
       setForgotOpen(false);
       setResetEmail("");
