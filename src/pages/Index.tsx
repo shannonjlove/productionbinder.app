@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ProductionDashboard } from "@/components/ProductionDashboard";
+import { ParallaxHeroBackground } from "@/components/ParallaxHeroBackground";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -25,7 +26,12 @@ const Index = () => {
     return null;
   }
 
-  return <ProductionDashboard />;
+  return (
+    <>
+      <ParallaxHeroBackground />
+      <ProductionDashboard />
+    </>
+  );
 };
 
 export default Index;
