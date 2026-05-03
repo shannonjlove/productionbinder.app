@@ -96,7 +96,9 @@ export default function ResetPassword() {
       toast.error(error.message);
     } else {
       toast.success("Password updated successfully");
-      navigate("/");
+      await supabase.auth.signOut();
+      setStatus("success");
+      setTimeout(() => navigate("/auth"), 3000);
     }
   };
 
