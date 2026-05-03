@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ShieldCheck, ArrowLeft, Trash2, Plus } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug } from "lucide-react";
 
 type RoleRow = { id: string; user_id: string; role: string; email?: string | null; full_name?: string | null };
 type AuditRow = {
@@ -23,6 +23,14 @@ type AuditRow = {
   new_data: any;
   old_data: any;
 };
+type SignInRow = {
+  id: string; email: string | null; event_type: string; user_agent: string | null;
+  ip_address: string | null; metadata: any; created_at: string;
+};
+type DebugRow = {
+  id: string; level: string; source: string | null; message: string;
+  context: any; url: string | null; created_at: string;
+};
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -31,7 +39,12 @@ export default function Admin() {
 
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [signIns, setSignIns] = useState<SignInRow[]>([]);
+  const [debugEvents, setDebugEvents] = useState<DebugRow[]>([]);
   const [filter, setFilter] = useState("");
+  const [signInFilter, setSignInFilter] = useState("");
+  const [debugFilter, setDebugFilter] = useState("");
+  const [debugLevel, setDebugLevel] = useState<string>("all");
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "producer" | "crew">("admin");
 
@@ -40,10 +53,12 @@ export default function Admin() {
   }, [authLoading, user, navigate]);
 
   const loadData = async () => {
-    const [{ data: r }, { data: a }, { data: profiles }] = await Promise.all([
+    const [{ data: r }, { data: a }, { data: profiles }, { data: si }, { data: de }] = await Promise.all([
       supabase.from("user_roles").select("*").order("role"),
       supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("user_id, email, full_name"),
+      supabase.from("sign_in_log").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("debug_events").select("*").order("created_at", { ascending: false }).limit(300),
     ]);
     const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
     setRoles((r || []).map((row: any) => ({
@@ -52,6 +67,8 @@ export default function Admin() {
       full_name: profileMap.get(row.user_id)?.full_name,
     })));
     setAudit((a as AuditRow[]) || []);
+    setSignIns((si as SignInRow[]) || []);
+    setDebugEvents((de as DebugRow[]) || []);
   };
 
   useEffect(() => {
@@ -88,6 +105,38 @@ export default function Admin() {
     (a.user_email || "").toLowerCase().includes(filter.toLowerCase())
   );
 
+  const filteredSignIns = signIns.filter(s =>
+    !signInFilter ||
+    (s.email || "").toLowerCase().includes(signInFilter.toLowerCase()) ||
+    s.event_type.toLowerCase().includes(signInFilter.toLowerCase())
+  );
+
+  const filteredDebug = debugEvents.filter(d =>
+    (debugLevel === "all" || d.level === debugLevel) &&
+    (!debugFilter ||
+      d.message.toLowerCase().includes(debugFilter.toLowerCase()) ||
+      (d.source || "").toLowerCase().includes(debugFilter.toLowerCase()))
+  );
+
+  const clearDebug = async () => {
+    if (!confirm("Delete all debug events?")) return;
+    const { error } = await supabase.from("debug_events").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+    else { toast.success("Debug events cleared"); loadData(); }
+  };
+
+  const eventBadge = (t: string) => {
+    if (t === "sign_in_failed") return "destructive" as const;
+    if (t === "sign_in") return "default" as const;
+    return "secondary" as const;
+  };
+
+  const levelBadge = (l: string) => {
+    if (l === "error") return "destructive" as const;
+    if (l === "warn") return "default" as const;
+    return "secondary" as const;
+  };
+
   return (
     <div className="min-h-screen p-6 bg-slate-950 text-slate-100">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -102,6 +151,8 @@ export default function Admin() {
         <Tabs defaultValue="roles">
           <TabsList className="bg-slate-900 border border-slate-700">
             <TabsTrigger value="roles">User Roles</TabsTrigger>
+            <TabsTrigger value="signins"><LogIn className="w-3.5 h-3.5 mr-1" />Sign-in Log</TabsTrigger>
+            <TabsTrigger value="debug"><Bug className="w-3.5 h-3.5 mr-1" />Debug</TabsTrigger>
             <TabsTrigger value="audit">Audit Log</TabsTrigger>
           </TabsList>
 
@@ -133,6 +184,85 @@ export default function Admin() {
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="signins">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Sign-in Log
+                  <Input placeholder="filter by email or event…" value={signInFilter} onChange={e => setSignInFilter(e.target.value)} className="max-w-xs bg-slate-950 border-slate-700" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>When</TableHead><TableHead>Email</TableHead><TableHead>Event</TableHead><TableHead>User Agent</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSignIns.map(s => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</TableCell>
+                        <TableCell className="text-slate-300">{s.email || "—"}</TableCell>
+                        <TableCell><Badge variant={eventBadge(s.event_type)}>{s.event_type}</Badge></TableCell>
+                        <TableCell className="text-xs text-slate-500 max-w-md truncate">{s.user_agent}</TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredSignIns.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-8">No sign-in events</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="debug">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
+                  <span>Debug Events</span>
+                  <div className="flex items-center gap-2">
+                    <select value={debugLevel} onChange={e => setDebugLevel(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-md px-3 text-sm h-9">
+                      <option value="all">all levels</option>
+                      <option value="error">error</option>
+                      <option value="warn">warn</option>
+                      <option value="info">info</option>
+                      <option value="debug">debug</option>
+                    </select>
+                    <Input placeholder="filter…" value={debugFilter} onChange={e => setDebugFilter(e.target.value)} className="max-w-xs bg-slate-950 border-slate-700" />
+                    <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
+                    <Button variant="destructive" size="sm" onClick={clearDebug}><Trash2 className="w-3.5 h-3.5 mr-1" />Clear</Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>Timestamp</TableHead><TableHead>Level</TableHead><TableHead>Source</TableHead><TableHead>Message</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDebug.map(d => (
+                      <TableRow key={d.id}>
+                        <TableCell className="text-xs text-slate-400 whitespace-nowrap font-mono">{new Date(d.created_at).toISOString()}</TableCell>
+                        <TableCell><Badge variant={levelBadge(d.level)}>{d.level}</Badge></TableCell>
+                        <TableCell className="font-mono text-xs text-slate-400">{d.source || "—"}</TableCell>
+                        <TableCell className="text-sm">
+                          <div className="text-slate-200">{d.message}</div>
+                          {d.context && (
+                            <pre className="text-[10px] text-slate-500 mt-1 max-w-2xl overflow-x-auto">{JSON.stringify(d.context, null, 2)}</pre>
+                          )}
+                          {d.url && <div className="text-[10px] text-slate-600 mt-1 truncate">{d.url}</div>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredDebug.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-8">No debug events</TableCell></TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

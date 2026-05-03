@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { Film, Clapperboard } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
+import { logSignInEvent } from "@/lib/debugLogger";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       try { localStorage.setItem("last_reset_email", resetEmail); } catch {}
+      logSignInEvent("password_reset_request", { email: resetEmail });
       toast.success("Password reset link sent. Check your email.");
       setForgotOpen(false);
       setResetEmail("");
@@ -66,15 +68,17 @@ export default function Auth() {
     }
     
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
+      logSignInEvent("sign_in_failed", { email, metadata: { reason: error.message } });
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Invalid email or password");
       } else {
         toast.error(error.message);
       }
     } else {
+      logSignInEvent("sign_in", { email, user_id: data.user?.id });
       toast.success("Welcome back!");
     }
     setLoading(false);

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Clapperboard, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
+import { logSignInEvent } from "@/lib/debugLogger";
 
 type Status = "validating" | "ready" | "invalid" | "authenticated" | "success";
 
@@ -95,6 +96,7 @@ export default function ResetPassword() {
     if (error) {
       toast.error(error.message);
     } else {
+      logSignInEvent("password_reset_complete", { email: resendEmail });
       toast.success("Password updated successfully");
       await supabase.auth.signOut();
       setStatus("success");
