@@ -52,6 +52,7 @@ export default function ResetPassword() {
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) setResendEmail((prev) => prev || session.user.email!);
       if (errorCode) {
         setStatus("invalid");
         return;
