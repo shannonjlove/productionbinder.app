@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Clapperboard, AlertTriangle } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
 
-type Status = "validating" | "ready" | "invalid" | "authenticated";
+type Status = "validating" | "ready" | "invalid" | "authenticated" | "success";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
