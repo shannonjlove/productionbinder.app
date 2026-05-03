@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Clapperboard, AlertTriangle } from "lucide-react";
+import { Clapperboard, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
 
 type Status = "validating" | "ready" | "invalid" | "authenticated" | "success";
