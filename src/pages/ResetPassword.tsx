@@ -27,10 +27,27 @@ export default function ResetPassword() {
     const hashParams = new URLSearchParams(hash);
     const errorCode = hashParams.get("error_code") || hashParams.get("error");
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // Try to extract email from access_token JWT in the URL hash
+    const accessToken = hashParams.get("access_token");
+    let prefill: string | null = null;
+    if (accessToken) {
+      try {
+        const payload = JSON.parse(atob(accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        if (payload?.email) prefill = payload.email;
+      } catch {}
+    }
+    if (!prefill) {
+      try { prefill = localStorage.getItem("last_reset_email"); } catch {}
+    }
+    if (prefill) setResendEmail(prefill);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
         setStatus("ready");
+      }
+      if (session?.user?.email && !resendEmail) {
+        setResendEmail(session.user.email);
       }
     });
 
