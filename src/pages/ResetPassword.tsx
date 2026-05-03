@@ -243,6 +243,20 @@ export default function ResetPassword() {
           {status === "validating" && (
             <div className="text-center text-sm text-slate-500 py-4">Please wait…</div>
           )}
+
+          {status === "success" && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                Your password has been updated successfully. You can now sign in with your new password.
+              </div>
+              <Button
+                onClick={() => navigate("/auth")}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold shadow-lg shadow-amber-500/25"
+              >
+                Continue to sign in
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
