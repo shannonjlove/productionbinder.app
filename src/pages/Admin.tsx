@@ -190,6 +190,85 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="signins">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Sign-in Log
+                  <Input placeholder="filter by email or event…" value={signInFilter} onChange={e => setSignInFilter(e.target.value)} className="max-w-xs bg-slate-950 border-slate-700" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>When</TableHead><TableHead>Email</TableHead><TableHead>Event</TableHead><TableHead>User Agent</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSignIns.map(s => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-xs text-slate-400 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</TableCell>
+                        <TableCell className="text-slate-300">{s.email || "—"}</TableCell>
+                        <TableCell><Badge variant={eventBadge(s.event_type)}>{s.event_type}</Badge></TableCell>
+                        <TableCell className="text-xs text-slate-500 max-w-md truncate">{s.user_agent}</TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredSignIns.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-8">No sign-in events</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="debug">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
+                  <span>Debug Events</span>
+                  <div className="flex items-center gap-2">
+                    <select value={debugLevel} onChange={e => setDebugLevel(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-md px-3 text-sm h-9">
+                      <option value="all">all levels</option>
+                      <option value="error">error</option>
+                      <option value="warn">warn</option>
+                      <option value="info">info</option>
+                      <option value="debug">debug</option>
+                    </select>
+                    <Input placeholder="filter…" value={debugFilter} onChange={e => setDebugFilter(e.target.value)} className="max-w-xs bg-slate-950 border-slate-700" />
+                    <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
+                    <Button variant="destructive" size="sm" onClick={clearDebug}><Trash2 className="w-3.5 h-3.5 mr-1" />Clear</Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>Timestamp</TableHead><TableHead>Level</TableHead><TableHead>Source</TableHead><TableHead>Message</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDebug.map(d => (
+                      <TableRow key={d.id}>
+                        <TableCell className="text-xs text-slate-400 whitespace-nowrap font-mono">{new Date(d.created_at).toISOString()}</TableCell>
+                        <TableCell><Badge variant={levelBadge(d.level)}>{d.level}</Badge></TableCell>
+                        <TableCell className="font-mono text-xs text-slate-400">{d.source || "—"}</TableCell>
+                        <TableCell className="text-sm">
+                          <div className="text-slate-200">{d.message}</div>
+                          {d.context && (
+                            <pre className="text-[10px] text-slate-500 mt-1 max-w-2xl overflow-x-auto">{JSON.stringify(d.context, null, 2)}</pre>
+                          )}
+                          {d.url && <div className="text-[10px] text-slate-600 mt-1 truncate">{d.url}</div>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredDebug.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-8">No debug events</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="audit">
             <Card className="bg-slate-900/60 border-slate-700">
               <CardHeader>
