@@ -60,10 +60,10 @@ const text = {
   margin: '0 0 25px',
 }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#f59e0b',
   color: '#ffffff',
   fontSize: '14px',
-  borderRadius: '8px',
+  borderRadius: '10px',
   padding: '12px 20px',
   textDecoration: 'none',
 }
