@@ -128,6 +128,8 @@ export default function ResetPassword() {
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/25">
             {status === "invalid" ? (
               <AlertTriangle className="w-8 h-8 text-white" />
+            ) : status === "success" ? (
+              <CheckCircle2 className="w-8 h-8 text-white" />
             ) : (
               <Clapperboard className="w-8 h-8 text-white" />
             )}
@@ -138,6 +140,8 @@ export default function ResetPassword() {
                 ? "Reset link invalid or expired"
                 : status === "authenticated"
                 ? "You're already signed in"
+                : status === "success"
+                ? "Password reset successful"
                 : "Set a new password"}
             </CardTitle>
             <CardDescription className="text-slate-600">
@@ -145,6 +149,7 @@ export default function ResetPassword() {
               {status === "ready" && "Enter and confirm your new password"}
               {status === "invalid" && "Request a new reset link below"}
               {status === "authenticated" && "Return to your dashboard"}
+              {status === "success" && "Your password has been updated. Redirecting you to sign in..."}
             </CardDescription>
           </div>
         </CardHeader>
