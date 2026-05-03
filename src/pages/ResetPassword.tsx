@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Clapperboard, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { AnimatedGradientBackground } from "@/components/AnimatedGradientBackground";
+import { logSignInEvent } from "@/lib/debugLogger";
 
 type Status = "validating" | "ready" | "invalid" | "authenticated" | "success";
 
