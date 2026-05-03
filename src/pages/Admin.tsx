@@ -105,6 +105,38 @@ export default function Admin() {
     (a.user_email || "").toLowerCase().includes(filter.toLowerCase())
   );
 
+  const filteredSignIns = signIns.filter(s =>
+    !signInFilter ||
+    (s.email || "").toLowerCase().includes(signInFilter.toLowerCase()) ||
+    s.event_type.toLowerCase().includes(signInFilter.toLowerCase())
+  );
+
+  const filteredDebug = debugEvents.filter(d =>
+    (debugLevel === "all" || d.level === debugLevel) &&
+    (!debugFilter ||
+      d.message.toLowerCase().includes(debugFilter.toLowerCase()) ||
+      (d.source || "").toLowerCase().includes(debugFilter.toLowerCase()))
+  );
+
+  const clearDebug = async () => {
+    if (!confirm("Delete all debug events?")) return;
+    const { error } = await supabase.from("debug_events").delete().not("id", "is", null);
+    if (error) toast.error(error.message);
+    else { toast.success("Debug events cleared"); loadData(); }
+  };
+
+  const eventBadge = (t: string) => {
+    if (t === "sign_in_failed") return "destructive" as const;
+    if (t === "sign_in") return "default" as const;
+    return "secondary" as const;
+  };
+
+  const levelBadge = (l: string) => {
+    if (l === "error") return "destructive" as const;
+    if (l === "warn") return "default" as const;
+    return "secondary" as const;
+  };
+
   return (
     <div className="min-h-screen p-6 bg-slate-950 text-slate-100">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -119,6 +151,8 @@ export default function Admin() {
         <Tabs defaultValue="roles">
           <TabsList className="bg-slate-900 border border-slate-700">
             <TabsTrigger value="roles">User Roles</TabsTrigger>
+            <TabsTrigger value="signins"><LogIn className="w-3.5 h-3.5 mr-1" />Sign-in Log</TabsTrigger>
+            <TabsTrigger value="debug"><Bug className="w-3.5 h-3.5 mr-1" />Debug</TabsTrigger>
             <TabsTrigger value="audit">Audit Log</TabsTrigger>
           </TabsList>
 
