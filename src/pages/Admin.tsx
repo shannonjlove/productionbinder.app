@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ShieldCheck, ArrowLeft, Trash2, Plus } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug } from "lucide-react";
 
 type RoleRow = { id: string; user_id: string; role: string; email?: string | null; full_name?: string | null };
 type AuditRow = {
@@ -22,6 +22,14 @@ type AuditRow = {
   created_at: string;
   new_data: any;
   old_data: any;
+};
+type SignInRow = {
+  id: string; email: string | null; event_type: string; user_agent: string | null;
+  ip_address: string | null; metadata: any; created_at: string;
+};
+type DebugRow = {
+  id: string; level: string; source: string | null; message: string;
+  context: any; url: string | null; created_at: string;
 };
 
 export default function Admin() {
