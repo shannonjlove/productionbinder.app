@@ -50,6 +50,21 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_admin_emails: {
+        Row: {
+          created_at: string
+          email: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+        }
+        Relationships: []
+      }
       av_script_entries: {
         Row: {
           audio: string | null
@@ -569,6 +584,39 @@ export type Database = {
           source?: string | null
           url?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      domain_records: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          name: string
+          notes: string | null
+          record_type: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          name: string
+          notes?: string | null
+          record_type: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          record_type?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }
