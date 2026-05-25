@@ -198,6 +198,7 @@ export default function Admin() {
 
         <Tabs defaultValue="domains">
           <TabsList className="bg-slate-900 border border-slate-700 flex-wrap h-auto">
+            <TabsTrigger value="compass"><Compass className="w-3.5 h-3.5 mr-1" />Crockett Compass</TabsTrigger>
             <TabsTrigger value="domains"><Globe className="w-3.5 h-3.5 mr-1" />Domains & DNS</TabsTrigger>
             <TabsTrigger value="roles">User Roles</TabsTrigger>
             <TabsTrigger value="signins"><LogIn className="w-3.5 h-3.5 mr-1" />Sign-in Log</TabsTrigger>
