@@ -9,8 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug, Globe, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug, Globe, RefreshCw, CheckCircle2, XCircle, Compass, Pin, ExternalLink } from "lucide-react";
 
 type RoleRow = { id: string; user_id: string; role: string; email?: string | null; full_name?: string | null };
 type AuditRow = {
