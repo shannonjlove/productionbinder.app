@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug, Globe, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 
 type RoleRow = { id: string; user_id: string; role: string; email?: string | null; full_name?: string | null };
 type AuditRow = {
@@ -31,6 +31,12 @@ type DebugRow = {
   id: string; level: string; source: string | null; message: string;
   context: any; url: string | null; created_at: string;
 };
+type DomainRow = {
+  id: string; domain: string; record_type: string; name: string;
+  value: string; notes: string | null;
+};
+type AutoAdminRow = { email: string; created_at: string };
+type DomainCheck = { url: string; status: number | null; ok: boolean; error?: string };
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -47,18 +53,26 @@ export default function Admin() {
   const [debugLevel, setDebugLevel] = useState<string>("all");
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "producer" | "crew">("admin");
+  const [domains, setDomains] = useState<DomainRow[]>([]);
+  const [autoAdmins, setAutoAdmins] = useState<AutoAdminRow[]>([]);
+  const [newAutoEmail, setNewAutoEmail] = useState("");
+  const [newDomain, setNewDomain] = useState({ domain: "productionbinder.app", record_type: "A", name: "", value: "", notes: "" });
+  const [checks, setChecks] = useState<DomainCheck[]>([]);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
 
   const loadData = async () => {
-    const [{ data: r }, { data: a }, { data: profiles }, { data: si }, { data: de }] = await Promise.all([
+    const [{ data: r }, { data: a }, { data: profiles }, { data: si }, { data: de }, { data: dom }, { data: aa }] = await Promise.all([
       supabase.from("user_roles").select("*").order("role"),
       supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("user_id, email, full_name"),
       supabase.from("sign_in_log").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("debug_events").select("*").order("created_at", { ascending: false }).limit(300),
+      supabase.from("domain_records").select("*").order("domain").order("record_type"),
+      supabase.from("auto_admin_emails").select("*").order("created_at"),
     ]);
     const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
     setRoles((r || []).map((row: any) => ({
@@ -69,6 +83,27 @@ export default function Admin() {
     setAudit((a as AuditRow[]) || []);
     setSignIns((si as SignInRow[]) || []);
     setDebugEvents((de as DebugRow[]) || []);
+    setDomains((dom as DomainRow[]) || []);
+    setAutoAdmins((aa as AutoAdminRow[]) || []);
+  };
+
+  const runDomainChecks = async () => {
+    setChecking(true);
+    const urls = [
+      "https://productionbinder.app",
+      "https://www.productionbinder.app",
+      "https://production-binder-app.lovable.app",
+    ];
+    const results = await Promise.all(urls.map(async (url) => {
+      try {
+        const r = await fetch(url, { method: "GET", mode: "no-cors" });
+        return { url, status: r.status || 0, ok: true } as DomainCheck;
+      } catch (e: any) {
+        return { url, status: null, ok: false, error: e?.message || "fetch failed" } as DomainCheck;
+      }
+    }));
+    setChecks(results);
+    setChecking(false);
   };
 
   useEffect(() => {
