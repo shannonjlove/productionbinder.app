@@ -416,6 +416,53 @@ export type Database = {
           },
         ]
       }
+      compass_entries: {
+        Row: {
+          body: string | null
+          category: string
+          created_at: string
+          external_url: string | null
+          id: string
+          pinned: boolean
+          series_id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          pinned?: boolean
+          series_id: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          pinned?: boolean
+          series_id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compass_entries_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_check_ins: {
         Row: {
           call_sheet_id: string
@@ -959,6 +1006,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      series_projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          lovable_project_id: string | null
+          name: string
+          site_url: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          lovable_project_id?: string | null
+          name: string
+          site_url?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          lovable_project_id?: string | null
+          name?: string
+          site_url?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       shoot_days: {
         Row: {
