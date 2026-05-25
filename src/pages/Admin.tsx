@@ -38,6 +38,8 @@ type DomainRow = {
 };
 type AutoAdminRow = { email: string; created_at: string };
 type DomainCheck = { url: string; status: number | null; ok: boolean; error?: string };
+type SeriesProject = { id: string; slug: string; name: string; site_url: string | null; description: string | null; lovable_project_id: string | null };
+type CompassEntry = { id: string; series_id: string; category: string; title: string; body: string | null; external_url: string | null; tags: string[] | null; pinned: boolean; updated_at: string };
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -60,13 +62,17 @@ export default function Admin() {
   const [newDomain, setNewDomain] = useState({ domain: "productionbinder.app", record_type: "A", name: "", value: "", notes: "" });
   const [checks, setChecks] = useState<DomainCheck[]>([]);
   const [checking, setChecking] = useState(false);
+  const [series, setSeries] = useState<SeriesProject[]>([]);
+  const [compass, setCompass] = useState<CompassEntry[]>([]);
+  const [activeSeries, setActiveSeries] = useState<string>("");
+  const [newEntry, setNewEntry] = useState({ category: "general", title: "", body: "", external_url: "" });
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
 
   const loadData = async () => {
-    const [{ data: r }, { data: a }, { data: profiles }, { data: si }, { data: de }, { data: dom }, { data: aa }] = await Promise.all([
+    const [{ data: r }, { data: a }, { data: profiles }, { data: si }, { data: de }, { data: dom }, { data: aa }, { data: sp }, { data: ce }] = await Promise.all([
       supabase.from("user_roles").select("*").order("role"),
       supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("user_id, email, full_name"),
@@ -74,6 +80,8 @@ export default function Admin() {
       supabase.from("debug_events").select("*").order("created_at", { ascending: false }).limit(300),
       supabase.from("domain_records").select("*").order("domain").order("record_type"),
       supabase.from("auto_admin_emails").select("*").order("created_at"),
+      supabase.from("series_projects").select("*").order("name"),
+      supabase.from("compass_entries").select("*").order("pinned", { ascending: false }).order("updated_at", { ascending: false }),
     ]);
     const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
     setRoles((r || []).map((row: any) => ({
@@ -86,6 +94,10 @@ export default function Admin() {
     setDebugEvents((de as DebugRow[]) || []);
     setDomains((dom as DomainRow[]) || []);
     setAutoAdmins((aa as AutoAdminRow[]) || []);
+    const sList = (sp as SeriesProject[]) || [];
+    setSeries(sList);
+    setCompass((ce as CompassEntry[]) || []);
+    if (!activeSeries && sList[0]) setActiveSeries(sList[0].id);
   };
 
   const runDomainChecks = async () => {
