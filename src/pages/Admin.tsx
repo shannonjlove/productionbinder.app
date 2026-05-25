@@ -206,6 +206,102 @@ export default function Admin() {
             <TabsTrigger value="audit">Audit Log</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="compass">
+            <div className="grid gap-4">
+              <Card className="bg-slate-900/60 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-amber-400" />
+                    Series Projects
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {series.map(s => (
+                    <button key={s.id} onClick={() => setActiveSeries(s.id)}
+                      className={`w-full text-left border rounded-md px-3 py-2 transition ${activeSeries === s.id ? "border-amber-500 bg-amber-500/5" : "border-slate-800 hover:border-slate-700"}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-slate-100">{s.name}</div>
+                          <div className="text-xs text-slate-400">{s.description}</div>
+                        </div>
+                        {s.site_url && (
+                          <a href={s.site_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                            className="text-amber-400 hover:text-amber-300 text-xs flex items-center gap-1">
+                            Open <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  {series.length === 0 && <p className="text-sm text-slate-500">No series projects yet.</p>}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-900/60 border-slate-700">
+                <CardHeader>
+                  <CardTitle>Compass Knowledge Base</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                    <select value={newEntry.category} onChange={e => setNewEntry({ ...newEntry, category: e.target.value })}
+                      className="bg-slate-950 border border-slate-700 rounded-md px-2 text-sm">
+                      {["general","workflow","admin","web","editorial","crew","cast","legal"].map(c => <option key={c}>{c}</option>)}
+                    </select>
+                    <Input placeholder="title" value={newEntry.title} onChange={e => setNewEntry({ ...newEntry, title: e.target.value })} className="bg-slate-950 border-slate-700 md:col-span-2" />
+                    <Input placeholder="external url (optional)" value={newEntry.external_url} onChange={e => setNewEntry({ ...newEntry, external_url: e.target.value })} className="bg-slate-950 border-slate-700" />
+                    <Button onClick={async () => {
+                      if (!activeSeries || !newEntry.title) return;
+                      const { error } = await supabase.from("compass_entries").insert({
+                        series_id: activeSeries,
+                        category: newEntry.category,
+                        title: newEntry.title,
+                        body: newEntry.body || null,
+                        external_url: newEntry.external_url || null,
+                      });
+                      if (error) toast.error(error.message);
+                      else { toast.success("Entry added"); setNewEntry({ category: "general", title: "", body: "", external_url: "" }); loadData(); }
+                    }}><Plus className="w-4 h-4 mr-1" />Add</Button>
+                  </div>
+                  <Textarea placeholder="body / notes" value={newEntry.body} onChange={e => setNewEntry({ ...newEntry, body: e.target.value })} className="bg-slate-950 border-slate-700 min-h-[80px]" />
+
+                  <div className="space-y-2">
+                    {compass.filter(e => e.series_id === activeSeries).map(e => (
+                      <div key={e.id} className="border border-slate-800 rounded-md p-3 hover:border-slate-700">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {e.pinned && <Pin className="w-3.5 h-3.5 text-amber-400" />}
+                            <Badge variant="secondary">{e.category}</Badge>
+                            <span className="font-semibold text-slate-100">{e.title}</span>
+                            {e.external_url && (
+                              <a href={e.external_url} target="_blank" rel="noreferrer" className="text-amber-400 hover:text-amber-300 text-xs flex items-center gap-1">
+                                <ExternalLink className="w-3 h-3" />link
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" onClick={async () => {
+                              await supabase.from("compass_entries").update({ pinned: !e.pinned }).eq("id", e.id);
+                              loadData();
+                            }}><Pin className={`w-4 h-4 ${e.pinned ? "text-amber-400" : "text-slate-500"}`} /></Button>
+                            <Button size="icon" variant="ghost" onClick={async () => {
+                              const { error } = await supabase.from("compass_entries").delete().eq("id", e.id);
+                              if (error) toast.error(error.message); else { toast.success("Removed"); loadData(); }
+                            }}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                          </div>
+                        </div>
+                        {e.body && <p className="text-sm text-slate-300 mt-2 whitespace-pre-wrap">{e.body}</p>}
+                        <div className="text-[10px] text-slate-500 mt-2">Updated {new Date(e.updated_at).toLocaleString()}</div>
+                      </div>
+                    ))}
+                    {compass.filter(e => e.series_id === activeSeries).length === 0 && (
+                      <p className="text-sm text-slate-500 text-center py-6">No entries yet for this series.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="domains">
             <div className="grid gap-4">
               <Card className="bg-slate-900/60 border-slate-700">
