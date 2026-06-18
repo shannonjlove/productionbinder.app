@@ -200,10 +200,10 @@ export function UsersManager() {
           </TableHeader>
           <TableBody>
             {loading && (
-              <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-6">Loading users…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-6">Loading users…</TableCell></TableRow>
             )}
             {!loading && filtered.length === 0 && (
-              <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-6">No users found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-6">No users found.</TableCell></TableRow>
             )}
             {paged.map(u => (
               <TableRow key={u.user_id} className="border-slate-800">
