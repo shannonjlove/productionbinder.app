@@ -50,42 +50,52 @@ export function ActivityFeedPanel() {
   const [loading, setLoading] = useState(false);
   const [newCount, setNewCount] = useState(0);
 
+  // Poll for new audit entries (audit_log is admin-only via RLS; not broadcast over realtime)
   useEffect(() => {
-    const channel = supabase
-      .channel("audit_log_feed")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "audit_log" },
-        (payload) => {
-          setEntries((prev) => [payload.new as AuditEntry, ...prev].slice(0, 200));
-          if (!open) setNewCount((c) => c + 1);
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    setNewCount(0);
     let cancelled = false;
-    (async () => {
+    let latestSeen: string | null = null;
+
+    const fetchInitial = async () => {
       setLoading(true);
       const { data } = await supabase
         .from("audit_log")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(100);
-      if (!cancelled) {
-        setEntries((data as AuditEntry[]) || []);
-        setLoading(false);
+      if (cancelled) return;
+      const rows = (data as AuditEntry[]) || [];
+      setEntries(rows);
+      latestSeen = rows[0]?.created_at ?? null;
+      setLoading(false);
+    };
+
+    const poll = async () => {
+      if (!latestSeen) return;
+      const { data } = await supabase
+        .from("audit_log")
+        .select("*")
+        .gt("created_at", latestSeen)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (cancelled) return;
+      const rows = (data as AuditEntry[]) || [];
+      if (rows.length > 0) {
+        setEntries((prev) => [...rows, ...prev].slice(0, 200));
+        latestSeen = rows[0].created_at;
+        if (!open) setNewCount((c) => c + rows.length);
       }
-    })();
+    };
+
+    fetchInitial();
+    const interval = setInterval(poll, 15000);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) setNewCount(0);
   }, [open]);
 
   return (
