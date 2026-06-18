@@ -100,7 +100,7 @@ export function UsersManager() {
   }, [users, filter, sort]);
 
   // Reset to page 1 when filter or page size changes
-  useEffect(() => { setPage(1); }, [filter, pageSize]);
+  useEffect(() => { setPage(1); }, [filter, pageSize, sort.col, sort.dir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
