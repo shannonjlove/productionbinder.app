@@ -20,6 +20,7 @@ import { DayOutOfDays } from "./DayOutOfDays";
 import { AVScriptManager } from "./AVScriptManager";
 import { ScreenplayEditor } from "./ScreenplayEditor";
 import { ContentCalendar } from "./ContentCalendar";
+import { ActivityFeedPanel } from "./ActivityFeedPanel";
 
 interface Production {
   id: string;
@@ -232,6 +233,9 @@ export function ProductionDashboard() {
           ) : (
             <h2 className="font-semibold text-slate-400">Select a production</h2>
           )}
+          <div className="ml-auto flex items-center gap-2">
+            {isAdmin && <ActivityFeedPanel />}
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
