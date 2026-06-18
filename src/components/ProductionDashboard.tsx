@@ -289,6 +289,9 @@ export function ProductionDashboard() {
               <TabsContent value="screenplay">
                 <ScreenplayEditor productionId={selectedProduction.id} />
               </TabsContent>
+              <TabsContent value="calendar">
+                <ContentCalendar productionId={selectedProduction.id} />
+              </TabsContent>
             </Tabs>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center">
