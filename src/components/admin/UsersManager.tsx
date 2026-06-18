@@ -183,9 +183,18 @@ export function UsersManager() {
         <Table>
           <TableHeader>
             <TableRow className="border-slate-800 hover:bg-transparent">
-              <TableHead className="text-slate-400"><Users className="w-3.5 h-3.5 inline mr-1" />User</TableHead>
-              <TableHead className="text-slate-400">Email</TableHead>
-              <TableHead className="text-slate-400">Role</TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("name")}>
+                <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" />User {sortIcon("name")}</span>
+              </TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("email")}>
+                <span className="inline-flex items-center gap-1">Email {sortIcon("email")}</span>
+              </TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("role")}>
+                <span className="inline-flex items-center gap-isa">Role {sortIcon("role")}</span>
+              </TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("updated")}>
+                <span className="inline-flex items-center gap-1">Updated {sortIcon("updated")}</span>
+              </TableHead>
               <TableHead className="text-slate-400 text-right">Admin</TableHead>
             </TableRow>
           </TableHeader>
