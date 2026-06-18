@@ -31,7 +31,11 @@ type UserRow = {
   email: string | null;
   full_name: string | null;
   isAdmin: boolean;
+  updated_at: string | null;
 };
+
+type SortColumn = "name" | "email" | "role" | "updated";
+type SortDir = "asc" | "desc";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
