@@ -25,10 +25,11 @@ interface DeliveryStatus {
 
 interface DeliveryTrackingProps {
   callSheet: DigitalCallSheetFormData;
+  productionId: string;
   onConfirmationUpdate?: (recipientId: string, confirmed: boolean) => void;
 }
 
-export const DeliveryTracking = ({ callSheet, onConfirmationUpdate }: DeliveryTrackingProps) => {
+export const DeliveryTracking = ({ callSheet, productionId, onConfirmationUpdate }: DeliveryTrackingProps) => {
   const [deliveryStatuses, setDeliveryStatuses] = useState<DeliveryStatus[]>([]);
   const [sending, setSending] = useState(false);
   const [sendingTo, setSendingTo] = useState<string | null>(null);
@@ -73,6 +74,7 @@ export const DeliveryTracking = ({ callSheet, onConfirmationUpdate }: DeliveryTr
     try {
       const { data, error } = await supabase.functions.invoke("send-call-sheet-notification", {
         body: {
+          productionId,
           callSheet,
           recipient: {
             name: status.recipientName,
@@ -117,6 +119,7 @@ export const DeliveryTracking = ({ callSheet, onConfirmationUpdate }: DeliveryTr
 
       const { data, error } = await supabase.functions.invoke("send-call-sheet-notification", {
         body: {
+          productionId,
           callSheet,
           recipients: recipients.map(s => ({
             name: s.recipientName,
