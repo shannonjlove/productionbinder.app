@@ -71,12 +71,33 @@ export function UsersManager() {
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(u =>
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.full_name || "").toLowerCase().includes(q)
-    );
-  }, [users, filter]);
+    let data = q
+      ? users.filter(u =>
+          (u.email || "").toLowerCase().includes(q) ||
+          (u.full_name || "").toLowerCase().includes(q)
+        )
+      : [...users];
+
+    data.sort((a, b) => {
+      let cmp = 0;
+      switch (sort.col) {
+        case "name":
+          cmp = (a.full_name || "").localeCompare(b.full_name || "", undefined, { sensitivity: "base" });
+          break;
+        case "email":
+          cmp = (a.email || "").localeCompare(b.email || "", undefined, { sensitivity: "base" });
+          break;
+        case "role":
+          cmp = Number(b.isAdmin) - Number(a.isAdmin);
+          break;
+        case "updated":
+          cmp = (new Date(a.updated_at || 0).getTime()) - (new Date(b.updated_at || 0).getTime());
+          break;
+      }
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+    return data;
+  }, [users, filter, sort]);
 
   // Reset to page 1 when filter or page size changes
   useEffect(() => { setPage(1); }, [filter, pageSize]);
