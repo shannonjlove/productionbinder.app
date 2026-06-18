@@ -70,27 +70,58 @@ export function ProductionDashboard() {
       return;
     }
 
+    if (!user?.id) {
+      toast.error("You must be signed in to create a production");
+      return;
+    }
+
     const { data, error } = await supabase
       .from("productions")
       .insert({
-        name: newProductionName,
-        company_name: newProductionCompany || null,
-        created_by: user?.id
+        name: newProductionName.trim(),
+        company_name: newProductionCompany.trim() || null,
+        created_by: user.id,
       })
       .select()
       .single();
 
     if (error) {
-      toast.error("Failed to create production");
-      console.error(error);
-    } else {
-      setProductions([data, ...productions]);
-      setSelectedProduction(data);
-      setNewProductionOpen(false);
-      setNewProductionName("");
-      setNewProductionCompany("");
-      toast.success("Production created");
+      console.error("Create production error:", error);
+      toast.error(`Failed to create production: ${error.message}`);
+      return;
     }
+
+    // Seed starter templates (cast, crew, scenes, checklist) — best effort
+    try {
+      await seedStarterTemplates(data.id);
+    } catch (e) {
+      console.warn("Starter template seeding failed", e);
+    }
+
+    setProductions([data, ...productions]);
+    setSelectedProduction(data);
+    setNewProductionOpen(false);
+    setNewProductionName("");
+    setNewProductionCompany("");
+    toast.success("Production created with starter templates");
+  };
+
+  const seedStarterTemplates = async (productionId: string) => {
+    const crewRes = await supabase.from("crew_members").insert([
+      { production_id: productionId, name: "Director", department: "Production", job_title: "Director" },
+      { production_id: productionId, name: "Producer", department: "Production", job_title: "Producer" },
+      { production_id: productionId, name: "DP / Cinematographer", department: "Camera", job_title: "Director of Photography" },
+      { production_id: productionId, name: "1st AD", department: "Production", job_title: "1st Assistant Director" },
+      { production_id: productionId, name: "Sound Mixer", department: "Sound", job_title: "Sound Mixer" },
+      { production_id: productionId, name: "Gaffer", department: "Lighting", job_title: "Gaffer" },
+    ]);
+    if (crewRes.error) console.warn("Crew seed error", crewRes.error);
+
+    const castRes = await supabase.from("cast_members").insert([
+      { production_id: productionId, cast_id: 1, character_name: "Lead", actor_name: "TBD" },
+      { production_id: productionId, cast_id: 2, character_name: "Supporting", actor_name: "TBD" },
+    ]);
+    if (castRes.error) console.warn("Cast seed error", castRes.error);
   };
 
   const handleSignOut = async () => {
