@@ -213,12 +213,11 @@ export function ContentCalendar({ productionId }: Props) {
   }, [tasks]);
 
   const projectStats = useMemo(() => {
-    const total = tasks.length;
     const by: Record<string, number> = { todo: 0, in_progress: 0, blocked: 0, done: 0 };
     tasks.forEach((t) => {
       by[t.status] = (by[t.status] || 0) + 1;
     });
-    return { total, ...by };
+    return { total: tasks.length, todo: by.todo, in_progress: by.in_progress, blocked: by.blocked, done: by.done };
   }, [tasks]);
 
   function TaskCard({ t, compact = false }: { t: CalendarTask; compact?: boolean }) {
