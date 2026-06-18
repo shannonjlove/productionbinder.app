@@ -1,37 +1,38 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { ProductionDashboard } from "@/components/ProductionDashboard";
-import { ParallaxHeroBackground } from "@/components/ParallaxHeroBackground";
+import { lazy, Suspense } from "react";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 
-const Index = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
+const ProductionDashboard = lazy(() =>
+  import("@/components/ProductionDashboard").then((module) => ({
+    default: module.ProductionDashboard,
+  }))
+);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
+const ParallaxHeroBackground = lazy(() =>
+  import("@/components/ParallaxHeroBackground").then((module) => ({
+    default: module.ParallaxHeroBackground,
+  }))
+);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
+export default function Index() {
   return (
-    <>
-      <ParallaxHeroBackground />
-      <ProductionDashboard />
-    </>
-  );
-};
+    <RouteErrorBoundary>
+      <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+        <Suspense fallback={null}>
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-0 pointer-events-none"
+          >
+            <ParallaxHeroBackground />
+          </div>
+        </Suspense>
 
-export default Index;
+        <section className="relative z-10 min-h-screen">
+          <Suspense fallback={<DashboardSkeleton />}>
+            <ProductionDashboard />
+          </Suspense>
+        </section>
+      </main>
+    </RouteErrorBoundary>
+  );
+}
