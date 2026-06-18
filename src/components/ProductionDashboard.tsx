@@ -107,21 +107,20 @@ export function ProductionDashboard() {
   };
 
   const seedStarterTemplates = async (productionId: string) => {
-    const [crewRes, castRes] = await Promise.all([
-      supabase.from("crew_members").insert([
-        { production_id: productionId, name: "Director", department: "Production", position: "Director" },
-        { production_id: productionId, name: "Producer", department: "Production", position: "Producer" },
-        { production_id: productionId, name: "DP / Cinematographer", department: "Camera", position: "DP" },
-        { production_id: productionId, name: "1st AD", department: "Production", position: "1st Assistant Director" },
-        { production_id: productionId, name: "Sound Mixer", department: "Sound", position: "Sound Mixer" },
-        { production_id: productionId, name: "Gaffer", department: "Lighting", position: "Gaffer" },
-      ]),
-      supabase.from("cast_members").insert([
-        { production_id: productionId, character_name: "Lead", actor_name: "TBD" },
-        { production_id: productionId, character_name: "Supporting", actor_name: "TBD" },
-      ]),
+    const crewRes = await supabase.from("crew_members").insert([
+      { production_id: productionId, name: "Director", department: "Production", job_title: "Director" },
+      { production_id: productionId, name: "Producer", department: "Production", job_title: "Producer" },
+      { production_id: productionId, name: "DP / Cinematographer", department: "Camera", job_title: "Director of Photography" },
+      { production_id: productionId, name: "1st AD", department: "Production", job_title: "1st Assistant Director" },
+      { production_id: productionId, name: "Sound Mixer", department: "Sound", job_title: "Sound Mixer" },
+      { production_id: productionId, name: "Gaffer", department: "Lighting", job_title: "Gaffer" },
     ]);
     if (crewRes.error) console.warn("Crew seed error", crewRes.error);
+
+    const castRes = await supabase.from("cast_members").insert([
+      { production_id: productionId, cast_id: 1, character_name: "Lead", actor_name: "TBD" },
+      { production_id: productionId, cast_id: 2, character_name: "Supporting", actor_name: "TBD" },
+    ]);
     if (castRes.error) console.warn("Cast seed error", castRes.error);
   };
 
