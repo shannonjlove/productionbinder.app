@@ -116,6 +116,17 @@ export function UsersManager() {
 
   const dirtyCount = Object.keys(dirty).length;
 
+  const sortIcon = (col: SortColumn) => {
+    if (sort.col !== col) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-600" />;
+    return sort.dir === "asc"
+      ? <ArrowUp className="w-3.5 h-3.5 text-amber-400" />
+      : <ArrowDown className="w-3.5 h-3.5 text-amber-400" />;
+  };
+
+  const toggleSort = (col: SortColumn) => {
+    setSort(prev => (prev.col === col ? { col, dir: prev.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  };
+
   const saveAll = async () => {
     setSaving(true);
     try {
