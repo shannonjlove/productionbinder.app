@@ -227,6 +227,9 @@ export function UsersManager() {
                     </Badge>
                   )}
                 </TableCell>
+                <TableCell className="text-slate-400 text-xs whitespace-nowrap">
+                  {u.updated_at ? new Date(u.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                </TableCell>
                 <TableCell className="text-right">
                   <Switch
                     checked={u.isAdmin}
