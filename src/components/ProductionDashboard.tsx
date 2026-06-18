@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video, BookOpen } from "lucide-react";
+import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video, BookOpen, CalendarDays } from "lucide-react";
 import { CastManager } from "./CastManager";
 import { CrewManager } from "./CrewManager";
 import { SceneManager } from "./SceneManager";
@@ -17,6 +17,7 @@ import { CallSheetManager } from "./CallSheetManager";
 import { DayOutOfDays } from "./DayOutOfDays";
 import { AVScriptManager } from "./AVScriptManager";
 import { ScreenplayEditor } from "./ScreenplayEditor";
+import { ContentCalendar } from "./ContentCalendar";
 
 interface Production {
   id: string;
