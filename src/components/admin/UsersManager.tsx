@@ -5,7 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Save, Search, Users } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Save, Search, ShieldCheck, User, Users } from "lucide-react";
 import { toast } from "sonner";
 
 type UserRow = {
@@ -15,12 +22,16 @@ type UserRow = {
   isAdmin: boolean;
 };
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
 export function UsersManager() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const load = async () => {
     setLoading(true);
@@ -49,6 +60,16 @@ export function UsersManager() {
       (u.full_name || "").toLowerCase().includes(q)
     );
   }, [users, filter]);
+
+  // Reset to page 1 when filter or page size changes
+  useEffect(() => { setPage(1); }, [filter, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIdx = (currentPage - 1) * pageSize;
+  const paged = filtered.slice(startIdx, startIdx + pageSize);
+  const showingFrom = filtered.length === 0 ? 0 : startIdx + 1;
+  const showingTo = Math.min(startIdx + pageSize, filtered.length);
 
   const toggle = (userId: string, next: boolean) => {
     setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, isAdmin: next } : u));
@@ -115,17 +136,18 @@ export function UsersManager() {
             <TableRow className="border-slate-800 hover:bg-transparent">
               <TableHead className="text-slate-400"><Users className="w-3.5 h-3.5 inline mr-1" />User</TableHead>
               <TableHead className="text-slate-400">Email</TableHead>
+              <TableHead className="text-slate-400">Role</TableHead>
               <TableHead className="text-slate-400 text-right">Admin</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && (
-              <TableRow><TableCell colSpan={3} className="text-center text-slate-500 py-6">Loading users…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-6">Loading users…</TableCell></TableRow>
             )}
             {!loading && filtered.length === 0 && (
-              <TableRow><TableCell colSpan={3} className="text-center text-slate-500 py-6">No users found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-6">No users found.</TableCell></TableRow>
             )}
-            {filtered.map(u => (
+            {paged.map(u => (
               <TableRow key={u.user_id} className="border-slate-800">
                 <TableCell className="text-slate-200">
                   <div className="flex items-center gap-2">
@@ -134,6 +156,19 @@ export function UsersManager() {
                   </div>
                 </TableCell>
                 <TableCell className="text-slate-400 font-mono text-xs">{u.email || "—"}</TableCell>
+                <TableCell>
+                  {u.isAdmin ? (
+                    <Badge className="bg-amber-600/20 text-amber-300 border border-amber-600/40 hover:bg-amber-600/30">
+                      <ShieldCheck className="w-3 h-3 mr-1" />
+                      Admin
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-slate-700 text-slate-400">
+                      <User className="w-3 h-3 mr-1" />
+                      User
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <Switch
                     checked={u.isAdmin}
@@ -144,6 +179,51 @@ export function UsersManager() {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span>Rows per page</span>
+          <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+            <SelectTrigger className="h-8 w-[80px] bg-slate-950 border-slate-700 text-slate-200">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map(n => (
+                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="ml-2">
+            Showing {showingFrom}–{showingTo} of {filtered.length}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-700"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Prev
+          </Button>
+          <span className="text-xs text-slate-400 min-w-[80px] text-center">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-700"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <p className="text-xs text-slate-500">
