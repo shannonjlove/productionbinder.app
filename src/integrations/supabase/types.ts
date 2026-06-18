@@ -171,6 +171,80 @@ export type Database = {
           },
         ]
       }
+      calendar_tasks: {
+        Row: {
+          backup_name: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          id: string
+          location: string | null
+          manager_name: string | null
+          notes: string | null
+          owner_name: string | null
+          priority: string
+          production_id: string
+          scheduled_date: string
+          start_time: string | null
+          status: string
+          title: string
+          updated_at: string
+          worker_name: string | null
+        }
+        Insert: {
+          backup_name?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          manager_name?: string | null
+          notes?: string | null
+          owner_name?: string | null
+          priority?: string
+          production_id: string
+          scheduled_date: string
+          start_time?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          worker_name?: string | null
+        }
+        Update: {
+          backup_name?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          manager_name?: string | null
+          notes?: string | null
+          owner_name?: string | null
+          priority?: string
+          production_id?: string
+          scheduled_date?: string
+          start_time?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          worker_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_tasks_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_sheet_cast: {
         Row: {
           block_rehearsal: string | null
