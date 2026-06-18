@@ -12,7 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Save, Search, ShieldCheck, User, Users } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Search,
+  ShieldCheck,
+  User,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type UserRow = {
