@@ -190,7 +190,7 @@ export function UsersManager() {
                 <span className="inline-flex items-center gap-1">Email {sortIcon("email")}</span>
               </TableHead>
               <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("role")}>
-                <span className="inline-flex items-center gap-isa">Role {sortIcon("role")}</span>
+                <span className="inline-flex items-center gap-1">Role {sortIcon("role")}</span>
               </TableHead>
               <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("updated")}>
                 <span className="inline-flex items-center gap-1">Updated {sortIcon("updated")}</span>
