@@ -259,6 +259,10 @@ export function ProductionDashboard() {
                   <BookOpen className="w-4 h-4 mr-2" />
                   Screenplay
                 </TabsTrigger>
+                <TabsTrigger value="calendar" className="text-slate-400 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  Calendar
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="cast">
