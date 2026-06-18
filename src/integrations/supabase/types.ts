@@ -171,6 +171,44 @@ export type Database = {
           },
         ]
       }
+      calendar_task_history: {
+        Row: {
+          changed_at: string
+          changed_by_name: string | null
+          from_status: string | null
+          id: string
+          note: string | null
+          task_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by_name?: string | null
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          task_id: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by_name?: string | null
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          task_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_task_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_tasks: {
         Row: {
           backup_name: string | null
@@ -186,6 +224,11 @@ export type Database = {
           owner_name: string | null
           priority: string
           production_id: string
+          recurrence: string
+          recurrence_parent_id: string | null
+          recurrence_until: string | null
+          reminder_minutes_before: number | null
+          reminder_sent: boolean
           scheduled_date: string
           start_time: string | null
           status: string
@@ -207,6 +250,11 @@ export type Database = {
           owner_name?: string | null
           priority?: string
           production_id: string
+          recurrence?: string
+          recurrence_parent_id?: string | null
+          recurrence_until?: string | null
+          reminder_minutes_before?: number | null
+          reminder_sent?: boolean
           scheduled_date: string
           start_time?: string | null
           status?: string
@@ -228,6 +276,11 @@ export type Database = {
           owner_name?: string | null
           priority?: string
           production_id?: string
+          recurrence?: string
+          recurrence_parent_id?: string | null
+          recurrence_until?: string | null
+          reminder_minutes_before?: number | null
+          reminder_sent?: boolean
           scheduled_date?: string
           start_time?: string | null
           status?: string
@@ -241,6 +294,13 @@ export type Database = {
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_tasks_recurrence_parent_id_fkey"
+            columns: ["recurrence_parent_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_tasks"
             referencedColumns: ["id"]
           },
         ]
