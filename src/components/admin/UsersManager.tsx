@@ -47,6 +47,7 @@ export function UsersManager() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [sort, setSort] = useState<{ col: SortColumn; dir: SortDir }>({ col: "name", dir: "asc" });
 
   const load = async () => {
     setLoading(true);
