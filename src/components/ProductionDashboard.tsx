@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video, BookOpen, CalendarDays } from "lucide-react";
+import { Plus, Film, Users, Clapperboard, Calendar, FileText, LogOut, Settings, Menu, X, Video, BookOpen, CalendarDays, ShieldCheck } from "lucide-react";
 import { CastManager } from "./CastManager";
 import { CrewManager } from "./CrewManager";
 import { SceneManager } from "./SceneManager";
@@ -32,6 +34,7 @@ interface Production {
 
 export function ProductionDashboard() {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [productions, setProductions] = useState<Production[]>([]);
   const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,6 +205,14 @@ export function ProductionDashboard() {
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </Button>
+          {isAdmin && (
+            <Link to="/admin" className="block mt-2">
+              <Button variant="outline" size="sm" className="w-full border-amber-600/40 text-amber-400 hover:bg-amber-600/10 hover:text-amber-300">
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                Admin Panel
+              </Button>
+            </Link>
+          )}
         </div>
       </aside>
 

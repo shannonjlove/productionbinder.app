@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug, Globe, RefreshCw, CheckCircle2, XCircle, Compass, Pin, ExternalLink } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Trash2, Plus, LogIn, Bug, Globe, RefreshCw, CheckCircle2, XCircle, Compass, Pin, ExternalLink, Users } from "lucide-react";
+import { UsersManager } from "@/components/admin/UsersManager";
 
 type RoleRow = { id: string; user_id: string; role: string; email?: string | null; full_name?: string | null };
 type AuditRow = {
@@ -200,7 +201,8 @@ export default function Admin() {
           <TabsList className="bg-slate-900 border border-slate-700 flex-wrap h-auto">
             <TabsTrigger value="compass"><Compass className="w-3.5 h-3.5 mr-1" />Crockett Compass</TabsTrigger>
             <TabsTrigger value="domains"><Globe className="w-3.5 h-3.5 mr-1" />Domains & DNS</TabsTrigger>
-            <TabsTrigger value="roles">User Roles</TabsTrigger>
+            <TabsTrigger value="users"><Users className="w-3.5 h-3.5 mr-1" />Users</TabsTrigger>
+            <TabsTrigger value="roles">All Roles</TabsTrigger>
             <TabsTrigger value="signins"><LogIn className="w-3.5 h-3.5 mr-1" />Sign-in Log</TabsTrigger>
             <TabsTrigger value="debug"><Bug className="w-3.5 h-3.5 mr-1" />Debug</TabsTrigger>
             <TabsTrigger value="audit">Audit Log</TabsTrigger>
@@ -411,6 +413,20 @@ export default function Admin() {
             </div>
           </TabsContent>
 
+
+          <TabsContent value="users">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-amber-400" />
+                  Users & Admin Access
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UsersManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="roles">
             <Card className="bg-slate-900/60 border-slate-700">
