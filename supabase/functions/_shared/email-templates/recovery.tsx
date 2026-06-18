@@ -70,8 +70,14 @@ const button = {
   backgroundColor: '#f59e0b',
   color: '#ffffff',
   fontSize: '14px',
+  fontWeight: 'bold' as const,
   borderRadius: '10px',
-  padding: '12px 20px',
+  padding: '14px 24px',
   textDecoration: 'none',
+  display: 'inline-block',
+  textAlign: 'center' as const,
 }
+const fallbackText = { fontSize: '12px', color: '#55575d', margin: '24px 0 6px' }
+const linkText = { fontSize: '12px', margin: '0 0 24px', wordBreak: 'break-all' as const }
+const link = { color: '#0a66c2', textDecoration: 'underline' }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
