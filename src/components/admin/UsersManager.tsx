@@ -12,7 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Save, Search, ShieldCheck, User, Users } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Search,
+  ShieldCheck,
+  User,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type UserRow = {
@@ -20,7 +31,11 @@ type UserRow = {
   email: string | null;
   full_name: string | null;
   isAdmin: boolean;
+  updated_at: string | null;
 };
+
+type SortColumn = "name" | "email" | "role" | "updated";
+type SortDir = "asc" | "desc";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -32,11 +47,12 @@ export function UsersManager() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [sort, setSort] = useState<{ col: SortColumn; dir: SortDir }>({ col: "name", dir: "asc" });
 
   const load = async () => {
     setLoading(true);
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("user_id, email, full_name").order("email"),
+      supabase.from("profiles").select("user_id, email, full_name, updated_at").order("email"),
       supabase.from("user_roles").select("user_id, role").eq("role", "admin"),
     ]);
     const adminSet = new Set((roles || []).map((r: any) => r.user_id));
@@ -45,6 +61,7 @@ export function UsersManager() {
       email: p.email,
       full_name: p.full_name,
       isAdmin: adminSet.has(p.user_id),
+      updated_at: p.updated_at,
     })));
     setDirty({});
     setLoading(false);
@@ -54,15 +71,36 @@ export function UsersManager() {
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(u =>
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.full_name || "").toLowerCase().includes(q)
-    );
-  }, [users, filter]);
+    let data = q
+      ? users.filter(u =>
+          (u.email || "").toLowerCase().includes(q) ||
+          (u.full_name || "").toLowerCase().includes(q)
+        )
+      : [...users];
+
+    data.sort((a, b) => {
+      let cmp = 0;
+      switch (sort.col) {
+        case "name":
+          cmp = (a.full_name || "").localeCompare(b.full_name || "", undefined, { sensitivity: "base" });
+          break;
+        case "email":
+          cmp = (a.email || "").localeCompare(b.email || "", undefined, { sensitivity: "base" });
+          break;
+        case "role":
+          cmp = Number(b.isAdmin) - Number(a.isAdmin);
+          break;
+        case "updated":
+          cmp = (new Date(a.updated_at || 0).getTime()) - (new Date(b.updated_at || 0).getTime());
+          break;
+      }
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+    return data;
+  }, [users, filter, sort]);
 
   // Reset to page 1 when filter or page size changes
-  useEffect(() => { setPage(1); }, [filter, pageSize]);
+  useEffect(() => { setPage(1); }, [filter, pageSize, sort.col, sort.dir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -77,6 +115,17 @@ export function UsersManager() {
   };
 
   const dirtyCount = Object.keys(dirty).length;
+
+  const sortIcon = (col: SortColumn) => {
+    if (sort.col !== col) return <ArrowUpDown className="w-3.5 h-3.5 text-slate-600" />;
+    return sort.dir === "asc"
+      ? <ArrowUp className="w-3.5 h-3.5 text-amber-400" />
+      : <ArrowDown className="w-3.5 h-3.5 text-amber-400" />;
+  };
+
+  const toggleSort = (col: SortColumn) => {
+    setSort(prev => (prev.col === col ? { col, dir: prev.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  };
 
   const saveAll = async () => {
     setSaving(true);
@@ -134,18 +183,27 @@ export function UsersManager() {
         <Table>
           <TableHeader>
             <TableRow className="border-slate-800 hover:bg-transparent">
-              <TableHead className="text-slate-400"><Users className="w-3.5 h-3.5 inline mr-1" />User</TableHead>
-              <TableHead className="text-slate-400">Email</TableHead>
-              <TableHead className="text-slate-400">Role</TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("name")}>
+                <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" />User {sortIcon("name")}</span>
+              </TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("email")}>
+                <span className="inline-flex items-center gap-1">Email {sortIcon("email")}</span>
+              </TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("role")}>
+                <span className="inline-flex items-center gap-1">Role {sortIcon("role")}</span>
+              </TableHead>
+              <TableHead className="text-slate-400 cursor-pointer select-none" onClick={() => toggleSort("updated")}>
+                <span className="inline-flex items-center gap-1">Updated {sortIcon("updated")}</span>
+              </TableHead>
               <TableHead className="text-slate-400 text-right">Admin</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && (
-              <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-6">Loading users…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-6">Loading users…</TableCell></TableRow>
             )}
             {!loading && filtered.length === 0 && (
-              <TableRow><TableCell colSpan={4} className="text-center text-slate-500 py-6">No users found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-6">No users found.</TableCell></TableRow>
             )}
             {paged.map(u => (
               <TableRow key={u.user_id} className="border-slate-800">
@@ -168,6 +226,9 @@ export function UsersManager() {
                       User
                     </Badge>
                   )}
+                </TableCell>
+                <TableCell className="text-slate-400 text-xs whitespace-nowrap">
+                  {u.updated_at ? new Date(u.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                 </TableCell>
                 <TableCell className="text-right">
                   <Switch
