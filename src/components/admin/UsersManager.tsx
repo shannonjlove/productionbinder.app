@@ -51,7 +51,7 @@ export function UsersManager() {
   const load = async () => {
     setLoading(true);
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("user_id, email, full_name").order("email"),
+      supabase.from("profiles").select("user_id, email, full_name, updated_at").order("email"),
       supabase.from("user_roles").select("user_id, role").eq("role", "admin"),
     ]);
     const adminSet = new Set((roles || []).map((r: any) => r.user_id));
@@ -60,6 +60,7 @@ export function UsersManager() {
       email: p.email,
       full_name: p.full_name,
       isAdmin: adminSet.has(p.user_id),
+      updated_at: p.updated_at,
     })));
     setDirty({});
     setLoading(false);
