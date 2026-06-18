@@ -13,6 +13,7 @@ interface Recipient {
 }
 
 interface NotificationRequest {
+  productionId: string;
   callSheet: {
     productionName: string;
     shootDate: string;
@@ -28,32 +29,37 @@ interface NotificationRequest {
   batch?: boolean;
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const normPhone = (p?: string) => (p ? p.replace(/[^\d+]/g, "") : "");
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Require authenticated caller
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: "Unauthorized" }, 401);
   }
-  const supabase = createClient(
+
+  const userClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(
+  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(
     authHeader.replace("Bearer ", ""),
   );
-  if (claimsError || !claimsData?.claims) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (claimsError || !userId) {
+    return json({ error: "Unauthorized" }, 401);
   }
 
   const esc = (s: unknown): string =>
@@ -64,35 +70,94 @@ serve(async (req) => {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
+  let request: NotificationRequest;
   try {
-    const request: NotificationRequest = await req.json();
-    const { callSheet, recipient, recipients, method, batch } = request;
+    request = await req.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
 
-    const allRecipients = batch && recipients ? recipients : recipient ? [recipient] : [];
-    
-    if (allRecipients.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No recipients provided" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  const { productionId, callSheet, recipient, recipients, method, batch } = request;
 
-    const results = {
-      email: { sent: 0, failed: 0 },
-      sms: { sent: 0, failed: 0 }
-    };
+  if (!productionId || !UUID_RE.test(productionId)) {
+    return json({ error: "productionId is required" }, 400);
+  }
+  if (!callSheet || typeof callSheet !== "object") {
+    return json({ error: "callSheet is required" }, 400);
+  }
+  if (method !== "email" && method !== "sms" && method !== "both") {
+    return json({ error: "Invalid method" }, 400);
+  }
 
-    // Send emails using fetch to Resend API
+  // Service-role client for authorization & recipient validation (bypasses RLS server-side only)
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Verify caller is a member of the production
+  const { data: memberCheck, error: memberErr } = await admin.rpc("is_production_member", {
+    _user_id: userId,
+    _production_id: productionId,
+  });
+  if (memberErr || !memberCheck) {
+    return json({ error: "Forbidden: not a member of this production" }, 403);
+  }
+
+  const requested: Recipient[] = batch && recipients ? recipients : recipient ? [recipient] : [];
+  if (requested.length === 0) {
+    return json({ error: "No recipients provided" }, 400);
+  }
+  if (requested.length > 200) {
+    return json({ error: "Too many recipients" }, 400);
+  }
+
+  // Load production-approved contact info from cast & crew
+  const [{ data: crew }, { data: cast }] = await Promise.all([
+    admin.from("crew_members").select("email, phone").eq("production_id", productionId),
+    admin.from("cast_members").select("email, phone").eq("production_id", productionId),
+  ]);
+
+  const allowedEmails = new Set<string>();
+  const allowedPhones = new Set<string>();
+  for (const row of [...(crew ?? []), ...(cast ?? [])] as Array<{ email?: string | null; phone?: string | null }>) {
+    if (row.email) allowedEmails.add(row.email.toLowerCase());
+    if (row.phone) allowedPhones.add(normPhone(row.phone));
+  }
+
+  // Filter to only recipients whose contact info belongs to this production
+  const safeRecipients: Recipient[] = requested
+    .map((r) => ({
+      name: String(r.name ?? "").slice(0, 200),
+      email: r.email && EMAIL_RE.test(r.email) && allowedEmails.has(r.email.toLowerCase()) ? r.email : undefined,
+      phone: r.phone && allowedPhones.has(normPhone(r.phone)) ? r.phone : undefined,
+    }))
+    .filter((r) => r.email || r.phone);
+
+  const rejectedCount = requested.length - safeRecipients.length;
+
+  if (safeRecipients.length === 0) {
+    return json(
+      { error: "No recipients matched this production's cast or crew", rejected: rejectedCount },
+      400,
+    );
+  }
+
+  const results = {
+    email: { sent: 0, failed: 0 },
+    sms: { sent: 0, failed: 0 },
+    rejected: rejectedCount,
+  };
+
+  try {
     if (method === "email" || method === "both") {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
-      
       if (resendApiKey) {
-        for (const r of allRecipients) {
+        for (const r of safeRecipients) {
           if (!r.email) continue;
-
           try {
-            const locationInfo = callSheet.locations?.length 
-              ? callSheet.locations.map(l => `${esc(l.name)}: ${esc(l.address)}`).join("<br>")
+            const locationInfo = callSheet.locations?.length
+              ? callSheet.locations.map((l) => `${esc(l.name)}: ${esc(l.address)}`).join("<br>")
               : "TBD";
 
             const emailHtml = `
@@ -107,7 +172,7 @@ serve(async (req) => {
             const response = await fetch("https://api.resend.com/emails", {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${resendApiKey}`,
+                Authorization: `Bearer ${resendApiKey}`,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
@@ -118,72 +183,55 @@ serve(async (req) => {
               }),
             });
 
-            if (response.ok) {
-              results.email.sent++;
-              console.log(`Email sent to ${r.email}`);
-            } else {
-              results.email.failed++;
-            }
+            if (response.ok) results.email.sent++;
+            else results.email.failed++;
           } catch (err) {
-            console.error(`Failed to send email to ${r.email}:`, err);
+            console.error("email send failed", err);
             results.email.failed++;
           }
         }
       }
     }
 
-    // Send SMS via Twilio
     if (method === "sms" || method === "both") {
       const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
       const twilioAuth = Deno.env.get("TWILIO_AUTH_TOKEN");
       const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
 
       if (twilioSid && twilioAuth && twilioPhone) {
-        for (const r of allRecipients) {
+        for (const r of safeRecipients) {
           if (!r.phone) continue;
-
           try {
             const locationName = callSheet.locations?.[0]?.name || "TBD";
             const smsBody = `CALL SHEET: ${callSheet.productionName}\nDate: ${callSheet.shootDate}\nCall: ${callSheet.generalCallTime}\nLocation: ${locationName}`;
 
             const auth = btoa(`${twilioSid}:${twilioAuth}`);
-            const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
-              method: "POST",
-              headers: {
-                "Authorization": `Basic ${auth}`,
-                "Content-Type": "application/x-www-form-urlencoded",
+            const response = await fetch(
+              `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Basic ${auth}`,
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({ To: r.phone, From: twilioPhone, Body: smsBody }),
               },
-              body: new URLSearchParams({
-                To: r.phone,
-                From: twilioPhone,
-                Body: smsBody,
-              }),
-            });
+            );
 
-            if (response.ok) {
-              results.sms.sent++;
-            } else {
-              results.sms.failed++;
-            }
+            if (response.ok) results.sms.sent++;
+            else results.sms.failed++;
           } catch (err) {
-            console.error(`Failed to send SMS to ${r.phone}:`, err);
+            console.error("sms send failed", err);
             results.sms.failed++;
           }
         }
       }
     }
 
-    return new Response(
-      JSON.stringify({ success: true, results }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
+    return json({ success: true, results });
   } catch (error: unknown) {
-    console.error("Error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("notification error:", message);
+    return json({ error: "Failed to send notifications" }, 500);
   }
 });
